@@ -6,7 +6,7 @@ const { t, locale } = useI18n()
 </script>
 <template>
   <v-card height="100%" variant="outlined">
-    <v-img v-if="benefit.image" :src="benefit.image" height="200" :cover="false" referrerpolicy="no-referrer" />
+    <v-img v-if="benefit.image" :src="benefit.image" max-height="250px"   referrerpolicy="no-referrer" />
     <v-card-title class="text-wrap">{{ benefit.title }}</v-card-title>
     <v-card-subtitle class="text-wrap">{{ benefit.company?.name }} · {{ benefit.category?.name }}</v-card-subtitle>
     <v-card-text>
