@@ -5,7 +5,7 @@ import BenefitCrudRoute from "./BenefitCrudRoute"
 import BenefitClaimCrudRoute from "./BenefitClaimCrudRoute"
 
 export const routes = [
-    { name: 'LeandroLanding', path: '/leandro', component: () => import('../../brand/LandingPage.vue'), meta: { auth: false } },
+    { name: 'LeandroLanding', path: '/', component: () => import('../../brand/LandingPage.vue'), meta: { auth: false } },
     ...CompanyCrudRoute,
 ...CategoryCrudRoute,
 ...BenefitCrudRoute,
