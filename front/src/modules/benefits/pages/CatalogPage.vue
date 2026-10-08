@@ -46,7 +46,7 @@ onMounted(initialize)
           <p class="text-overline text-secondary mb-3">{{ t('brand.catalogEyebrow') }}</p>
           <h1 id="catalog-title" class="catalog-heading mb-4">{{ t('brand.catalogTitle') }}</h1>
           <p class="text-body-1 catalog-copy mb-5">{{ t('brand.catalogIntro') }}</p>
-          <v-btn :to="{ name: 'LeandroLanding' }" variant="outlined" rounded="pill" append-icon="mdi-arrow-right">{{ t('brand.learn') }}</v-btn>
+          <v-btn :to="{ name: 'Root' }" variant="outlined" rounded="pill" append-icon="mdi-arrow-right">{{ t('brand.learn') }}</v-btn>
         </v-col>
         <v-col cols="12" md="4" class="d-none d-md-block">
           <img :src="connections" alt="" width="600" height="400" class="catalog-art" />

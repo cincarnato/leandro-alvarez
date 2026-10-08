@@ -19,8 +19,8 @@ const { darkMode } = useDarkMode()
       <BrandMark />
       <v-spacer />
       <nav class="d-none d-md-flex align-center ga-1" :aria-label="t('brand.network')">
-        <v-btn :to="{ name: 'LeandroLanding' }" variant="text" rounded="pill" exact>{{ t('brand.about') }}</v-btn>
-        <v-btn :to="{ name: 'Root' }" variant="text" rounded="pill" exact>{{ t('brand.catalog') }}</v-btn>
+        <v-btn :to="{ name: 'Root' }" variant="text" rounded="pill" exact>{{ t('brand.about') }}</v-btn>
+        <v-btn :to="{ name: 'Catalog' }" variant="text" rounded="pill" exact>{{ t('brand.catalog') }}</v-btn>
       </nav>
       <v-btn :href="brand.whatsappHref" icon="mdi-whatsapp" variant="text" class="d-none d-sm-flex ml-2" :aria-label="t('brand.whatsapp')" />
       <v-btn :icon="darkMode ? 'mdi-weather-sunny' : 'mdi-weather-night'" variant="text" :aria-label="t(darkMode ? 'brand.themeLight' : 'brand.themeDark')" :title="t(darkMode ? 'brand.themeLight' : 'brand.themeDark')" @click="darkMode = !darkMode" />
@@ -34,8 +34,8 @@ const { darkMode } = useDarkMode()
           <v-btn v-bind="props" icon="mdi-dots-vertical" variant="text" class="d-md-none" :aria-label="t('brand.menu')" />
         </template>
         <v-list>
-          <v-list-item :to="{ name: 'LeandroLanding' }" :title="t('brand.about')" prepend-icon="mdi-account-outline" />
-          <v-list-item :to="{ name: 'Root' }" :title="t('brand.catalog')" prepend-icon="mdi-gift-outline" />
+          <v-list-item :to="{ name: 'Root' }" :title="t('brand.about')" prepend-icon="mdi-account-outline" />
+          <v-list-item :to="{ name: 'Catalog' }" :title="t('brand.catalog')" prepend-icon="mdi-gift-outline" />
           <v-list-item :href="brand.whatsappHref" :title="t('brand.whatsapp')" prepend-icon="mdi-whatsapp" />
           <v-list-item v-if="!isAuthenticated()" :to="{ name: 'Login' }" :title="t('brand.operator')" prepend-icon="mdi-lock-outline" />
         </v-list>

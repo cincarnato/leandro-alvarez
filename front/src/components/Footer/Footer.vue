@@ -18,8 +18,8 @@ const year = new Date().getFullYear()
         <v-col cols="12" sm="6" md="3">
           <h2 class="text-subtitle-2 mb-4">{{ t('brand.network') }}</h2>
           <nav class="d-flex flex-column align-start ga-3" :aria-label="t('brand.network')">
-            <router-link :to="{ name: 'LeandroLanding' }">{{ t('brand.about') }}</router-link>
-            <router-link :to="{ name: 'Root' }">{{ t('brand.catalog') }}</router-link>
+            <router-link :to="{ name: 'Root' }">{{ t('brand.about') }}</router-link>
+            <router-link :to="{ name: 'Catalog' }">{{ t('brand.catalog') }}</router-link>
             <router-link :to="{ name: 'Login' }">{{ t('brand.operator') }}</router-link>
           </nav>
         </v-col>

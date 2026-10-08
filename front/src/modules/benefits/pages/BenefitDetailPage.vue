@@ -32,7 +32,7 @@ watch(() => route.params.id, load, { immediate: true })
 </script>
 <template>
   <v-container>
-    <v-btn :to="{ name: 'Root' }" variant="text" class="mb-4">{{ t('benefitsMvp.back') }}</v-btn>
+    <v-btn :to="{ name: 'Catalog' }" variant="text" class="mb-4">{{ t('benefitsMvp.back') }}</v-btn>
     <v-alert v-if="error" type="error" class="mb-4">{{ t(error) }} <v-btn v-if="!benefit" variant="text" @click="load">{{ t('benefitsMvp.retry') }}</v-btn></v-alert>
     <v-progress-linear v-if="loading" indeterminate />
     <v-row v-if="benefit">

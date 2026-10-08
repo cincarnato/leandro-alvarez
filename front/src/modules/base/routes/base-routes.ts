@@ -7,8 +7,8 @@ import NotificationTestPage from "@/modules/base/pages/notification/Notification
 const baseRoutes = [
   {
     name: 'Root',
-    path: '/catalogo',
-    component: () => import('../../benefits/pages/CatalogPage.vue'),
+    path: '/',
+    component: () => import('../../brand/LandingPage.vue'),
     meta: {
       auth: false,
     }

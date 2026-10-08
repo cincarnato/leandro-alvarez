@@ -1,11 +1,11 @@
 import type {MenuItem} from '../types/menu'
 
 const menu: MenuItem[] = [
-  { icon: 'mdi-account-outline', text: 'brand.about', link: { name: 'LeandroLanding' }, gallery: false, auth: false },
+  { icon: 'mdi-account-outline', text: 'brand.about', link: { name: 'Root' }, gallery: false, auth: false },
   {
     icon: 'mdi-home',
     text:'benefitsMvp.catalog',
-    link: { name: "Root" },
+    link: { name: "Catalog" },
     gallery: false,
     auth: false
   },

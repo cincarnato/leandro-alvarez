@@ -31,7 +31,7 @@ const steps = ['choose', 'save', 'present'] as const
             </h1>
             <p class="intro mt-6 mb-8">{{ t('brand.heroIntro') }}</p>
             <div class="d-flex flex-wrap ga-3 landing-actions">
-              <v-btn :to="{ name: 'Root' }" color="primary" size="large" rounded="pill" append-icon="mdi-arrow-right">
+              <v-btn :to="{ name: 'Catalog' }" color="primary" size="large" rounded="pill" append-icon="mdi-arrow-right">
                 {{ t('brand.catalog') }}
               </v-btn>
               <v-btn href="#leandro" variant="outlined" size="large" rounded="pill">
@@ -127,7 +127,7 @@ const steps = ['choose', 'save', 'present'] as const
           </v-col>
           <v-col cols="12" md="5">
             <div class="d-flex flex-column align-start ga-4 landing-actions">
-              <v-btn :to="{ name: 'Root' }" color="primary" size="large" rounded="pill" append-icon="mdi-arrow-right">
+              <v-btn :to="{ name: 'Catalog' }" color="primary" size="large" rounded="pill" append-icon="mdi-arrow-right">
                 {{ t('brand.catalog') }}
               </v-btn>
               <v-btn :href="brand.whatsappHref" variant="outlined" size="large" rounded="pill" prepend-icon="mdi-whatsapp">

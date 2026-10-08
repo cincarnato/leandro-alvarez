@@ -6,7 +6,7 @@ const { t } = useI18n()
 </script>
 
 <template>
-  <router-link :to="{ name: 'LeandroLanding' }" class="brand-mark" :class="{ 'brand-mark--inverse': inverse }" :aria-label="`${brand.name} · ${t('brand.network')}`">
+  <router-link :to="{ name: 'Root' }" class="brand-mark" :class="{ 'brand-mark--inverse': inverse }" :aria-label="`${brand.name} · ${t('brand.network')}`">
     <span class="brand-monogram" aria-hidden="true">{{ brand.initials }}<span /></span>
     <span class="brand-wordmark">
       <span class="brand-name">{{ brand.name }}</span>
