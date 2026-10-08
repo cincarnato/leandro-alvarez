@@ -7,8 +7,8 @@
   "scripts": {
     "back": "nodemon --exec node --env-file .env --loader ts-node/esm src/index.ts",
     "prod": "node --env-file .env  index.js",
-    "build": "tsc -p tsconfig.json && copyfiles package.json ../out",
-    "build:local": "tsc -p tsconfig.build.json && copyfiles package.json ../build",
+    "build": "tsc -p tsconfig.json && copyfiles package.json scripts/seed-demo.mjs \"assets/demo/**/*\" ../out",
+    "build:local": "tsc -p tsconfig.build.json && copyfiles package.json scripts/seed-demo.mjs \"assets/demo/**/*\" ../build",
     "copyPackage": "copyfiles package.json ../out",
     "copyPackage:local": "copyfiles package.json ../build",
     "copygql": "copyfiles -u 1 ./**/*.graphql out/",
@@ -17,6 +17,7 @@
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "node --import tsx --test test/**/*.test* ",
     "test:benefits": "node --import tsx --test test/modules/benefits/*.test.ts",
+        "seed:demo": "node --env-file-if-exists=.env scripts/seed-demo.mjs",
     "recoveryAdmin": " node --env-file .env --loader ts-node/esm src/setup/scripts/RecoverAdminPassword.ts",
     "initRootUserAndAdminRole": " node --env-file .env --loader ts-node/esm src/setup/scripts/CreateRootUserAndAdminRole.ts"
   },

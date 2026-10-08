@@ -2,6 +2,45 @@
 
 Implementado exclusivamente en `back/`, con MongoDB y Drax instalado. No requiere dependencias nuevas.
 
+## Seed de datos para demo
+
+Ejecutar desde `back/` en desarrollo, o desde el directorio del backend desplegado (por ejemplo `/app` en Docker):
+
+```sh
+npm run seed:demo
+```
+
+El comando carga `.env` si existe y respeta las variables ya definidas en el entorno. Utiliza la base configurada por `DRAX_MONGO_URI`; requiere `DRAX_DB_ENGINE=mongo` y permisos de escritura en la base y en `DRAX_FILE_DIR`. No necesita iniciar un servidor HTTP ni crear usuarios. Usa el runtime Node 24 del proyecto.
+
+### Contenido
+
+- **8 categorías:** Hogar, Mudanzas, Construcción, Decoración, Jardinería, Servicios, Tecnología y Bienestar.
+- **10 comercios ficticios**, cada uno con nombre, descripción y logo PNG original local.
+- **12 beneficios activos**, relacionados con esos comercios y categorías, con descripción y condiciones completas; **4 destacados**.
+- Fechas relativas a la ejecución: inicio un día antes y vencimiento **90 días después**. Los 12 beneficios están disponibles inmediatamente en el catálogo.
+- La imagen de cada beneficio reutiliza el logo de su comercio.
+
+Todos los nombres y títulos tienen el prefijo **`Demo · `** y las condiciones aclaran que no tienen validez comercial. El seed no genera usuarios, roles, cupones ni canjes, y no borra registros.
+
+### Repetición
+
+Se reutilizan categorías y comercios por sus nombres de demo. Se conservan los logos ya registrados, evitando nuevas cargas en una ejecución normal. Se reactivan esos comercios y se actualizan los beneficios de demo coincidentes por título/comercio/categoría: descripción, condiciones, flags, imagen y vigencia. Los registros reales sin ese prefijo no se modifican.
+
+**Importante:** renovar la vigencia de un beneficio también renueva la disponibilidad de sus cupones de demo que todavía no fueron canjeados. No se modifica su historial de canje. Ejecutar una sola instancia del seed a la vez; no es un proceso concurrente ni una transacción global. Si una ejecución se interrumpe, puede repetirse para completar la carga. Si se renombra un registro de demo o se cambia la relación de un beneficio, el seed puede crear su versión original nuevamente.
+
+### Assets y despliegue
+
+- Datos: `src/setup/data/benefits-demo.ts`.
+- Seed: `src/setup/scripts/SeedBenefitsDemo.ts`.
+- Launcher: `scripts/seed-demo.mjs`.
+- Logos pregenerados: `assets/demo/logos/*.png`; no se requiere internet ni herramientas de generación de imágenes en el servidor.
+
+`npm run build` copia el launcher y los assets junto al JavaScript compilado en `../out`; `npm run build:local` hace lo mismo en `../build`. El mismo comando `npm run seed:demo` funciona allí con dependencias de producción, **sin `tsx` ni TypeScript**. En el checkout fuente utiliza el `tsx` ya instalado como dependencia de desarrollo.
+
+Media guarda los logos usando el almacenamiento y las rutas existentes de Drax. Conviene usar un `DRAX_FILE_DIR` persistente. `DRAX_BASE_URL`, si está definido, debe ser la URL pública correcta del backend; sin él se generan URLs relativas `/api/file/...`. No utilizar directorios de uploads diferentes entre el seed y el servidor.
+
+Los 10 logos se validan antes de crear registros. El comando muestra un resumen de creados/reutilizados/actualizados, cierra MongoDB al terminar y devuelve un código distinto de cero si falla. La validación se realizó en MongoInMemory, no sobre la base real del servidor.
+
 ## Endpoints del MVP
 
 Todos los éxitos devuelven **HTTP 200**. Los endpoints públicos y la emisión no requieren autenticación. Los protegidos utilizan el JWT/API key y RBAC existentes de Drax.
