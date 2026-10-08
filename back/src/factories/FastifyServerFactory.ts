@@ -3,24 +3,32 @@ import {
     jwtMiddleware,
     rbacMiddleware,
     apiKeyMiddleware,
-    UserRoutes,
+
     RoleRoutes,
     TenantRoutes,
     UserApiKeyRoutes,
     UserSessionRoutes,
     UserLoginFailRoutes
 } from "@drax/identity-back"
-import {MediaRoutes, FileRoutes} from "@drax/media-back"
-import {SettingRoutes} from "@drax/settings-back"
+import BenefitsMediaRoutes from '../modules/benefits/routes/BenefitsMediaRoutes.js';
+import BenefitsFileRoutes from '../modules/benefits/routes/BenefitsFileRoutes.js';
+import BenefitSettingRoutes from '../modules/benefits/routes/BenefitSettingRoutes.js';
 import {DashboardRoutes} from "@drax/dashboard-back";
 import {AuditRoutes} from "@drax/audit-back";
 import {AIRoutes, AILogRoutes} from "@drax/ai-back";
 import {CrudSavedQueryFastifyRoutes} from "@drax/crud-back";
 import {RecoveryFastifyRoutes} from "@drax/recovery-back";
 //Local modules routes
-import {GoogleFastifyRoutes} from "../modules/google/routes/GoogleRoutes.js"
+
 import {HealthRoutes} from "../modules/base/routes/HealthRoutes.js"
 import {NotificationFastifyRoutes} from "../modules/base/routes/NotificationRoutes.js"
+
+import BenefitUserRoutes from '../modules/benefits/routes/BenefitUserRoutes.js';
+import BenefitFastifyRoutes from '../modules/benefits/routes/BenefitRoutes.js';
+import CompanyFastifyRoutes from '../modules/benefits/routes/CompanyRoutes.js';
+import CategoryFastifyRoutes from '../modules/benefits/routes/CategoryRoutes.js';
+import BenefitClaimFastifyRoutes from '../modules/benefits/routes/BenefitClaimRoutes.js';
+import BenefitsRoutes from '../modules/benefits/routes/BenefitsRoutes.js';
 
 function FastifyServerFactory(rootDir:string) {
     const server = new FastifyServer(rootDir);
@@ -32,7 +40,7 @@ function FastifyServerFactory(rootDir:string) {
     server.fastifyHook('onRequest',rbacMiddleware)
 
     //IDENTITY ROUTES
-    server.fastifyRegister(UserRoutes)
+    server.fastifyRegister(BenefitUserRoutes)
     server.fastifyRegister(RoleRoutes)
     server.fastifyRegister(TenantRoutes)
     server.fastifyRegister(UserApiKeyRoutes)
@@ -41,9 +49,9 @@ function FastifyServerFactory(rootDir:string) {
 
     //DRAX MODULES ROUTES
     server.fastifyRegister(AuditRoutes)
-    server.fastifyRegister(MediaRoutes)
-    server.fastifyRegister(FileRoutes)
-    server.fastifyRegister(SettingRoutes)
+    server.fastifyRegister(BenefitsMediaRoutes)
+    server.fastifyRegister(BenefitsFileRoutes)
+    server.fastifyRegister(BenefitSettingRoutes)
     server.fastifyRegister(DashboardRoutes)
     server.fastifyRegister(AIRoutes)
     server.fastifyRegister(AILogRoutes)
@@ -52,9 +60,14 @@ function FastifyServerFactory(rootDir:string) {
     server.fastifyRegister(RecoveryFastifyRoutes)
 
     //LOCAL MODULES ROUTES
-    server.fastifyRegister(GoogleFastifyRoutes)
+
     server.fastifyRegister(HealthRoutes)
     server.fastifyRegister(NotificationFastifyRoutes)
+    server.fastifyRegister(CompanyFastifyRoutes)
+    server.fastifyRegister(CategoryFastifyRoutes)
+    server.fastifyRegister(BenefitFastifyRoutes)
+    server.fastifyRegister(BenefitClaimFastifyRoutes)
+    server.fastifyRegister(BenefitsRoutes)
 
 
 

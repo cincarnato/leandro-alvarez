@@ -1,4 +1,33 @@
-# Vuetify (Default)
+# Frontend Benefits MVP
+
+## MVP de beneficios
+
+- Público: `/` (catálogo, sección de destacados basada en `featured: true` y filtro de categoría), `/benefits/:id` (detalle/emisión) y `/coupons/:token` (cupón, QR local, copiar enlace, guardar PDF/imprimir).
+- Administración: `/crud/company`, `/crud/category`, `/crud/benefit` usando CRUD Drax, relaciones y archivos de Drax Media.
+- Consulta: `/crud/benefitclaim` requiere `benefitclaim:view`; paginación real de `/api/benefit-claims`, clave de fila `token`, sin create/edit/delete/import/export.
+- Operador: `/operator/coupons` requiere `benefitclaim:view`. La cámara usa `BarcodeDetector` con `qr_code` cuando el navegador lo soporta y en contexto seguro (HTTPS/localhost); siempre existe ingreso manual de código/enlace. Escanear solo inspecciona. El canje requiere `benefitclaim:redeem` y confirmación explícita. La cámara se detiene al salir, ocultar la pestaña o completar lectura.
+- Dashboard: `/benefits/statistics/overview` requiere `benefits:statistics`. Un único GET `/api/benefit-statistics` devuelve `{claims, redeemed, pending, byBenefit, byCompany}`. Ambos desgloses contienen `{id, name, generated, redeemed}` y se muestran directamente, sin descargar ni paginar cupones. Los pendientes por grupo son `generated - redeemed`; `pending` incluye vencidos. Los grupos históricos sin nombre muestran un texto alternativo.
+- Usuarios: `/crud/user` conserva el formulario/validación/password de identidad Drax y añade `company` como relación editable por administradores. Roles/settings mantienen sus pantallas existentes. Los menús dependen de permisos, no de nombres de rol.
+- Acceso backoffice: los operadores se crean desde la administración de usuarios, asignando rol y comercio cuando corresponda. El login no ofrece registro público ni acceso con Google; la ruta frontend Drax `Registration` (`/registration`) no se registra. Se mantienen login con contraseña, cambio de contraseña y recuperación de contraseña. Este ajuste del frontend no modifica los endpoints del backend.
+
+### Privacidad y permisos
+
+El QR se genera con `qrcode` dentro del navegador, sin servicios QR externos. Roboto e iconos se sirven localmente con las dependencias existentes, sin solicitudes a Google Fonts. Los cupones y códigos escaneados no se guardan en stores/localStorage ni se registran en consola. El adaptador HTTP de beneficios reutiliza URL base y headers del cliente REST Drax, pero evita su logger de URLs sensibles, usa `cache: no-store`, `referrerPolicy: no-referrer` y no envía el JWT en requests públicos. `index.html` incluye política global `no-referrer`; Vite dev/preview también devuelve `Referrer-Policy: no-referrer`.
+
+**Despliegue:** servir el build como SPA con fallback a `index.html` para las URLs públicas/protegidas. Configurar también `Referrer-Policy: no-referrer` en el servidor/proxy de producción y evitar registrar URLs que contengan tokens (logs de acceso, analítica, reportes externos). El frontend no puede configurar los logs/headers de ese servidor. El enlace de cupón es una credencial y queda necesariamente en la URL/historial del navegador; se advierte al usuario que no lo publique.
+
+MANAGER dispone de `file:upload` y `file:view`, por lo que puede cargar imágenes mediante Drax Media. La UI sigue verificando `file:upload` para habilitar la carga, sin depender del nombre del rol. El selector de imágenes admite únicamente formatos raster PNG, JPEG, WebP y GIF; el backend valida los archivos y rechaza SVG/HTML.
+
+### Validación y build
+
+```sh
+npm run vuetsc
+npm run build
+```
+
+`npm run build` genera la salida en `../out/public` (relativo a `front/`), compatible con el despliegue existente de `Dockerfile` y `build.sh`. `npm run build:local` mantiene su salida en `../build/public`.
+
+## Scaffold Vuetify original
 
 This is the official scaffolding tool for Vuetify, designed to give you a head start in building your new Vuetify application. It sets up a base template with all the necessary configurations and standard directory structure, enabling you to begin development without the hassle of setting up the project from scratch.
 

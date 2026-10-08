@@ -19,6 +19,12 @@ import {BasePermissions} from "../modules/base/permissions/BasePermissions.js";
 import {NotificationPermissions} from "../modules/base/permissions/NotificationPermissions.js";
 
 
+import CompanyPermissions from '../modules/benefits/permissions/CompanyPermissions.js';
+import CategoryPermissions from '../modules/benefits/permissions/CategoryPermissions.js';
+import BenefitPermissions from '../modules/benefits/permissions/BenefitPermissions.js';
+import BenefitClaimPermissions from '../modules/benefits/permissions/BenefitClaimPermissions.js';
+import BenefitsPermissions from '../modules/benefits/permissions/BenefitsPermissions.js';
+
 function InitializePermissions() {
 
     //Merge All Permissions
@@ -42,6 +48,11 @@ function InitializePermissions() {
         //Local modules permissions
         ...Object.values(BasePermissions),
         ...Object.values(NotificationPermissions),
+                ...Object.values(CompanyPermissions),
+                ...Object.values(CategoryPermissions),
+                ...Object.values(BenefitPermissions),
+                ...Object.values(BenefitClaimPermissions),
+                ...Object.values(BenefitsPermissions),
 
     ]
 

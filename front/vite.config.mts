@@ -1,7 +1,7 @@
 // Plugins
 import AutoImport from 'unplugin-auto-import/vite'
 import Components from 'unplugin-vue-components/vite'
-import Fonts from 'unplugin-fonts/vite'
+
 import Layouts from 'vite-plugin-vue-layouts-next'
 import Vue from '@vitejs/plugin-vue'
 import Vuetify, { transformAssetUrls } from 'vite-plugin-vuetify'
@@ -14,11 +14,13 @@ import { fileURLToPath, URL } from 'node:url'
 export default defineConfig({
   server: {
     port: 3080,
+    headers: { 'Referrer-Policy': 'no-referrer' },
     proxy: {
       '/api': 'http://localhost:8080',
       '/graphql': 'http://localhost:8080',
     },
   },
+  preview: { headers: { 'Referrer-Policy': 'no-referrer' } },
   build: {
     outDir: '../out/public',
   },
@@ -48,14 +50,6 @@ export default defineConfig({
       autoImport: true,
       styles: {
         configFile: 'src/styles/settings.scss',
-      },
-    }),
-    Fonts({
-      google: {
-        families: [ {
-          name: 'Roboto',
-          styles: 'wght@100;300;400;500;700;900',
-        }],
       },
     }),
   ],

@@ -8,9 +8,9 @@ const baseRoutes = [
   {
     name: 'Root',
     path: '/',
-    component: HomePage,
+    component: () => import('../../benefits/pages/CatalogPage.vue'),
     meta: {
-      auth: true,
+      auth: false,
     }
   },
   {

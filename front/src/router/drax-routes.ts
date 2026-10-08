@@ -8,7 +8,17 @@ import {RecoveryRoutes} from "@drax/recovery-vue";
 
 
 const draxRoutes = [
-  ...IdentityRoutes,
+  ...IdentityRoutes
+    .filter(route => route.name !== 'Registration')
+    .map(route => {
+      if (route.name === 'CrudUser') {
+        return { ...route, component: () => import('../modules/base/pages/user/CustomUserCrudPage.vue') }
+      }
+      if (route.name === 'IdentityLogin') {
+        return { ...route, component: () => import('../modules/base/pages/user/LoginPage.vue') }
+      }
+      return route
+    }),
   ...SettingRoutes,
   ...DashboardCrudRoute,
   ...AuditRoutes,

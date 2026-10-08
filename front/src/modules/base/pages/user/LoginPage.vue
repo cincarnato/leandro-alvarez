@@ -3,11 +3,12 @@
 import {IdentityLogin} from "@drax/identity-vue";
 import {useDisplay, useTheme} from 'vuetify'
 import {computed} from 'vue'
-import {useRouter} from "vue-router";
-import GoogleLogin from "@/modules/google/components/GoogleLogin.vue";
+import {useRouter, useRoute} from "vue-router";
+
 
 
 const router = useRouter()
+const route = useRoute()
 
 
 const {mobile} = useDisplay()
@@ -20,7 +21,8 @@ const TITLE_SEC = import.meta.env.VITE_TITLE_SEC || 'SCAFFOLD';
 
 
 function onLoginSuccess(){
-  router.push('/')
+  const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : '/'
+  router.push(redirect.startsWith('/') && !redirect.startsWith('//') ? redirect : '/')
 }
 
 </script>
@@ -35,11 +37,8 @@ function onLoginSuccess(){
         </h2>
 
 
-        <IdentityLogin @loginSuccess="onLoginSuccess" recovery register></IdentityLogin>
+        <IdentityLogin @loginSuccess="onLoginSuccess" recovery></IdentityLogin>
 
-        <div class="d-flex justify-center mt-4 mb-2">
-          <google-login @loginSuccess="onLoginSuccess"></google-login>
-        </div>
 
         <div class="d-flex justify-center">
           <dark-mode></dark-mode>

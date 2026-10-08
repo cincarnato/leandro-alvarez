@@ -4,7 +4,7 @@ import CustomRoleCrud from "../modules/base/cruds/CustomRoleCrud";
 
 function setupCustomIdentity(){
   const identityCrudStore = useIdentityCrudStore()
-  identityCrudStore.setUserCrud(new CustomUserCrud())
+  identityCrudStore.setUserCrud(CustomUserCrud.instance)
   identityCrudStore.setRoleCrud(new CustomRoleCrud())
 }
 

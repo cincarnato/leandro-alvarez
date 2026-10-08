@@ -5,6 +5,8 @@ import CreateRootUserAndAdminRole from "./CreateRootUserAndAdminRole.js";
 import CreateSystemRoles from "./CreateSystemRoles.js";
 import InitializeSettings from "./InitializeSettings.js";
 import InitializeAudit from "./InitializeAudit.js";
+import InitializeBenefitIdentity from './InitializeBenefitIdentity.js';
+import InitializeMediaConfig from './InitializeMediaConfig.js';
 
 import {projectPasswordPolicy} from "./data/policies/PasswordPolicy.js";
 
@@ -13,6 +15,8 @@ async function SetupDrax(){
     //Load Identity Drax Config from enviroment variables
     LoadCommonConfigFromEnv()
     LoadIdentityConfigFromEnv()
+    InitializeMediaConfig()
+    InitializeBenefitIdentity()
 
     //Setup MongoDB connection if needed
     if(DraxConfig.getOrLoad(CommonConfig.DbEngine) === 'mongo'){

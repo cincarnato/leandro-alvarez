@@ -1,4 +1,5 @@
 import App from './App.vue'
+import 'roboto-fontface/css/roboto/roboto-fontface.css'
 import indexI18n from "@/i18n/index-I18n";
 import vuetify from "@/plugins/vuetify";
 import router from "@/router/index-routes";
@@ -8,6 +9,7 @@ import {setupAuth} from "./setup/SetupAuth";
 import setupSetting from "./setup/SetupSetting";
 import SetupEntities from "./setup/SetupEntities";
 import setupButtons from "./setup/SetupButtons";
+import setupCustomIdentity from './setup/SetupCustomIdentity';
 
 //Setup App
 const app = createApp(App)
@@ -25,7 +27,7 @@ SetupEntities()
 setupButtons()
 
 //Setup Custom Identity Cruds
-//setupCustomIdentity()
+setupCustomIdentity()
 
 
 //Setup Router, I18n and Vuetify

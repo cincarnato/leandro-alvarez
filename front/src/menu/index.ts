@@ -3,11 +3,17 @@ import type {MenuItem} from '../types/menu'
 const menu: MenuItem[] = [
   {
     icon: 'mdi-home',
-    text:'home',
-    link: { name: "Home" },
+    text:'benefitsMvp.catalog',
+    link: { name: "Root" },
     gallery: false,
     auth: false
   },
+  { icon: 'mdi-store', text: 'company.menu', link: { name: 'CompanyCrudPage' }, gallery: true, auth: true, permission: 'company:manage' },
+  { icon: 'mdi-shape', text: 'category.menu', link: { name: 'CategoryCrudPage' }, gallery: true, auth: true, permission: 'category:manage' },
+  { icon: 'mdi-gift', text: 'benefit.menu', link: { name: 'BenefitCrudPage' }, gallery: true, auth: true, permission: 'benefit:manage' },
+  { icon: 'mdi-ticket', text: 'benefitsMvp.coupons', link: { name: 'BenefitClaimCrudPage' }, gallery: true, auth: true, permission: 'benefitclaim:view' },
+  { icon: 'mdi-qrcode-scan', text: 'benefitsMvp.operator', link: { name: 'CouponOperator' }, gallery: true, auth: true, permission: 'benefitclaim:view' },
+  { icon: 'mdi-chart-bar', text: 'benefitsMvp.statistics', link: { name: 'BenefitStatistics' }, gallery: true, auth: true, permission: 'benefits:statistics' },
   {
     icon: 'mdi-account-circle',
     text:'admin',

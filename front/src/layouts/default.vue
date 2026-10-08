@@ -6,7 +6,8 @@ import {useSettingStore} from "@drax/settings-vue";
 import DarkMode from "../components/DarkMode/index.vue";
 import SidebarMenu from "../components/SidebarMenu/SidebarMenu.vue";
 import AnimatedBackground from "../components/AnimatedBackground/AnimatedBackground.vue";
-import {useRouter} from "vue-router";
+import {useRouter, useRoute} from "vue-router";
+import {useI18n} from 'vue-i18n';
 import { useDarkMode } from '../composables/useDarkMode.js'
 import NotificationButton from "../modules/base/components/NotificationButton.vue"
 
@@ -23,7 +24,10 @@ let drawer = ref(false)
 const {push} = useRouter()
 const settingStore = useSettingStore()
 
-const {isAuthenticated} = useAuth()
+const {isAuthenticated, hasPermission} = useAuth()
+const {t} = useI18n()
+const route = useRoute()
+const publicPage = computed(() => ['Root', 'BenefitDetail', 'PublicCoupon'].includes(String(route.name)))
 
 const appName = computed(() => {
   return settingStore.getSettingValueByKey('AppName')
@@ -35,24 +39,25 @@ const appName = computed(() => {
     <v-navigation-drawer v-model="drawer" temporary>
       <sidebar-menu :menu="menu"></sidebar-menu>
     </v-navigation-drawer>
-    <v-app-bar v-if="isAuthenticated()" >
-      <v-app-bar-nav-icon v-model="menu" @click="drawer=!drawer"/>
+    <v-app-bar v-if="isAuthenticated() || publicPage" >
+      <v-app-bar-nav-icon v-if="isAuthenticated()" @click="drawer=!drawer"/>
       <slot name="toolbar-left">
         <v-btn icon @click="push({name:'Root'})">
           <v-icon>mdi-home</v-icon>
         </v-btn>
-       <v-app-bar-title> {{appName}}</v-app-bar-title>
+       <v-app-bar-title> {{appName || t('benefitsMvp.catalog')}}</v-app-bar-title>
       </slot>
       <v-spacer></v-spacer>
       <slot name="toolbar-right"></slot>
       <dark-mode></dark-mode>
-      <notification-button class="mr-2"></notification-button>
-      <identity-profile-avatar class="cursor-pointer" @click="profileDrawer = !profileDrawer"></identity-profile-avatar>
+      <v-btn v-if="!isAuthenticated()" :to="{name:'Login'}">{{ t('benefitsMvp.login') }}</v-btn>
+      <notification-button v-if="isAuthenticated() && hasPermission('notification:view')" class="mr-2"></notification-button>
+      <identity-profile-avatar v-if="isAuthenticated()" class="cursor-pointer" @click="profileDrawer = !profileDrawer"></identity-profile-avatar>
     </v-app-bar>
 
     <identity-profile-drawer v-if="isAuthenticated()" v-model="profileDrawer" ></identity-profile-drawer>
 
-    <animated-background></animated-background>
+    <animated-background v-if="!publicPage"></animated-background>
 
     <v-main>
       <router-view/>

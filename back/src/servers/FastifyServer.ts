@@ -21,6 +21,8 @@ import {
     UploadFileError
 } from "@drax/common-back";
 import pino from 'pino'
+import {redactLogUrl} from './RedactLogUrl.js';
+import {rasterUploadSizeLimit} from '../modules/benefits/services/RasterImageUpload.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -90,7 +92,7 @@ class FastifyServer {
                 req: (req: any) => {
                     return {
                         method: req.method,
-                        route: req.url,
+                        route: redactLogUrl(req.url),
                         ip: req.ip,
 
                     };
@@ -99,7 +101,7 @@ class FastifyServer {
                     return {
                         status_code: reply?.statusCode,
                         method: reply.request?.method,
-                        route: reply.request?.url,
+                        route: redactLogUrl(reply.request?.url),
                         user: reply?.rbac?.username || null,
                         tenant: reply?.rbac?.tenantName || null,
                     };
@@ -163,7 +165,11 @@ class FastifyServer {
         });
 
         this.fastifyServer.setNotFoundHandler(function (request, reply) {
-            reply.sendFile("index.html");
+            const pathname = request.url.split('?')[0];
+            if (pathname === '/api' || pathname.startsWith('/api/')) {
+                return reply.code(404).send(new NotFoundError().body);
+            }
+            return reply.sendFile('index.html');
         });
     }
 
@@ -194,8 +200,7 @@ class FastifyServer {
     }
 
     get getFileSizeLimit():number{
-        const DRAX_MAX_UPLOAD_SIZE = process.env.DRAX_MAX_UPLOAD_SIZE
-        return DRAX_MAX_UPLOAD_SIZE ? parseInt(DRAX_MAX_UPLOAD_SIZE) + 10000 : 100000000; // 100MB
+        return rasterUploadSizeLimit();
     }
 
     setupMultipart() {

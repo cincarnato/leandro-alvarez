@@ -14,7 +14,9 @@
     "copygql": "copyfiles -u 1 ./**/*.graphql out/",
     "copygql:local": "copyfiles -u 1 ./**/*.graphql build/",
     "tsc": "tsc -p tsconfig.json",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "node --import tsx --test test/**/*.test* ",
+    "test:benefits": "node --import tsx --test test/modules/benefits/*.test.ts",
     "recoveryAdmin": " node --env-file .env --loader ts-node/esm src/setup/scripts/RecoverAdminPassword.ts",
     "initRootUserAndAdminRole": " node --env-file .env --loader ts-node/esm src/setup/scripts/CreateRootUserAndAdminRole.ts"
   },

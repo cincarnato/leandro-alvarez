@@ -1,6 +1,30 @@
-# Drax Scaffold
+# Red de Beneficios — Leandro Alvarez
 
-Scaffold base para iniciar proyectos con Drax Framework.
+MVP sobre Drax: catálogo público, cupones individuales sin registro y backoffice para administrar comercios, categorías, beneficios y canjes.
+
+## Uso del MVP
+
+- `/`: catálogo vigente y destacados, con filtro por categoría.
+- `/benefits/:id`: detalle y obtención de cupón.
+- `/coupons/:token`: enlace privado del cupón, QR local, copia e impresión.
+- El menú del backoffice muestra las pantallas según los permisos de ADMIN, MANAGER o MERCHANT.
+- Para un operador MERCHANT, asignar su comercio en el ABM de usuarios. El backend restringe consultas y canjes a ese comercio.
+- El setup existente inicializa los roles al iniciar el backend. Utilizar MongoDB; el flujo de canje atómico y las estadísticas del MVP están implementados para ese motor.
+
+Contrato, permisos, límites y seguridad: [back/BENEFITS_API.md](back/BENEFITS_API.md). Detalles de frontend y despliegue: [front/README.md](front/README.md).
+
+### Verificación
+
+Desde `back/`: `npm run typecheck`, `npm run test:benefits` y `npm run build`.
+Desde `front/`: `npm run build` (incluye `vue-tsc` y genera `out/public`).
+
+La suite nueva usa `node:test` y MongoInMemory. La ejecución general `npm test` también descubre tests anteriores de Vitest incompatibles con ese runner; no fueron modificados.
+
+Los schemas declarativos están en `arch/src/schemas/benefits`. `npm run build` y `npm run copy:safe` desde `arch/` regeneran el scaffold sin sobrescribir las personalizaciones existentes. `arch/output/` es una salida regenerable no versionada.
+
+## Scaffold Drax
+
+El proyecto reutiliza el scaffold y los módulos existentes de Drax Framework.
 
 El repositorio esta organizado como monorepo con tres paquetes principales:
 
