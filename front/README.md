@@ -1,5 +1,13 @@
 # Frontend Benefits MVP
 
+## Identidad de Leandro
+
+- Landing pública: **`/leandro`**, enlazada desde la app bar, el catálogo, el menú y el footer. El catálogo continúa en `/`.
+- Paleta propia: azul tinta, terracota y arena, con variantes claras/oscuras. Los colores están centralizados en `src/plugins/themes`; se conserva la preferencia de tema del usuario.
+- App bar con monograma LA, navegación responsive, contacto y acceso a operadores; footer con teléfono público, WhatsApp e Instagram.
+- Retrato real descargado del perfil público indicado por el cliente. Ilustraciones SVG originales creadas por IA, sin servicios externos ni retratos sintéticos. Fuentes y tratamiento: `src/assets/brand/README.md`.
+- Contactos y foto centralizados en `src/modules/brand/brand.ts`; textos ES/EN en `brand-i18n.ts`. No se muestra la marca de la inmobiliaria ni su email corporativo. El enlace de Instagram conserva la URL original sin mostrar su handle.
+
 ## MVP de beneficios
 
 - Público: `/` (catálogo, sección de destacados basada en `featured: true` y filtro de categoría), `/benefits/:id` (detalle/emisión) y `/coupons/:token` (cupón, QR local, copiar enlace, guardar PDF/imprimir).

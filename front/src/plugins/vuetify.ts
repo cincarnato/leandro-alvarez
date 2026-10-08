@@ -32,10 +32,14 @@ export default createVuetify({
     },
   },
   theme: {
-    defaultTheme: 'dark',
+    defaultTheme: 'light',
     themes: {
       light,dark
     },
+  },
+  defaults: {
+    VBtn: { class: 'text-none font-weight-medium' },
+    VCard: { rounded: 'lg' },
   },
   locale: {
     locale: 'es',

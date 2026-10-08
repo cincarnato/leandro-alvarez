@@ -4,7 +4,7 @@ import vuetify from '../../plugins/vuetify.js'
 export const useVuetifyStore = defineStore('VuetifyStore', {
   state: () => (
     {
-      darkMode: true as boolean,
+      darkMode: false as boolean,
     }
   ),
   actions: {

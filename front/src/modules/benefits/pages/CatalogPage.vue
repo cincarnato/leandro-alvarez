@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 import { benefitsApi, benefitsErrorKey } from '../providers/BenefitsApi'
 import type { PublicBenefit, PublicCategory } from '../interfaces/PublicBenefit'
 import BenefitCatalogCard from '../components/BenefitCatalogCard.vue'
+import connections from '../../../assets/brand/connections.svg'
 const { t } = useI18n()
 const items = ref<PublicBenefit[]>([])
 const sections = computed(() => {
@@ -38,9 +39,22 @@ watch(category, load)
 onMounted(initialize)
 </script>
 <template>
-  <v-container>
+  <v-container class="catalog-container py-8 py-md-12">
+    <section class="catalog-intro mb-8" aria-labelledby="catalog-title">
+      <v-row align="center">
+        <v-col cols="12" md="8">
+          <p class="text-overline text-secondary mb-3">{{ t('brand.catalogEyebrow') }}</p>
+          <h1 id="catalog-title" class="catalog-heading mb-4">{{ t('brand.catalogTitle') }}</h1>
+          <p class="text-body-1 catalog-copy mb-5">{{ t('brand.catalogIntro') }}</p>
+          <v-btn :to="{ name: 'LeandroLanding' }" variant="outlined" rounded="pill" append-icon="mdi-arrow-right">{{ t('brand.learn') }}</v-btn>
+        </v-col>
+        <v-col cols="12" md="4" class="d-none d-md-block">
+          <img :src="connections" alt="" width="600" height="400" class="catalog-art" />
+        </v-col>
+      </v-row>
+    </section>
     <v-row align="center">
-      <v-col cols="12" md="8"><h1 class="text-h4">{{ t('benefitsMvp.catalog') }}</h1></v-col>
+      <v-col cols="12" md="8"><h2 class="text-h5">{{ t('benefitsMvp.availableBenefits') }}</h2></v-col>
       <v-col cols="12" md="4"><v-select v-model="category" :items="categories" item-title="name" item-value="_id" :label="t('benefitsMvp.allCategories')" clearable hide-details /></v-col>
     </v-row>
     <v-alert v-if="error" type="error" class="my-4">{{ t(error) }} <v-btn variant="text" @click="initialize">{{ t('benefitsMvp.retry') }}</v-btn></v-alert>
@@ -58,3 +72,10 @@ onMounted(initialize)
     </template>
   </v-container>
 </template>
+<style scoped>
+.catalog-container { max-width: 1200px; }
+.catalog-intro { padding: clamp(24px, 4vw, 48px); border: 1px solid rgba(var(--v-theme-on-surface), .1); border-radius: 24px; background: rgb(var(--v-theme-surface)); }
+.catalog-heading { font: 400 clamp(2rem, 4vw, 3.5rem)/1.15 Georgia, serif; letter-spacing: -.035em; text-wrap: balance; }
+.catalog-copy { max-width: 580px; line-height: 1.8; }
+.catalog-art { display: block; width: 100%; height: auto; border-radius: 16px; }
+</style>
