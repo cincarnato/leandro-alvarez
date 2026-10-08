@@ -30,8 +30,11 @@ MANAGER dispone de `file:upload` y `file:view`, por lo que puede cargar imágene
 
 ```sh
 npm run vuetsc
+npm run test:benefits-api
 npm run build
 ```
+
+`test:benefits-api` usa `node:test` de Node 24 y el Vite existente para cargar el cliente real de Drax; verifica que las peticiones sin cuerpo no envíen `Content-Type`, que el canje conserve autorización y que las consultas públicas no envíen el JWT. No realiza solicitudes externas.
 
 `npm run build` genera la salida en `../out/public` (relativo a `front/`), compatible con el despliegue existente de `Dockerfile` y `build.sh`. `npm run build:local` mantiene su salida en `../build/public`.
 

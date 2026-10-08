@@ -177,7 +177,6 @@ class FastifyServer {
 
     setupErrorHandler(){
         this.fastifyServer.setErrorHandler((e, request, reply) => {
-            console.error("FastifyServer Error Handler ",e)
             if(
                 e instanceof ValidationError ||
                 e instanceof NotFoundError ||
@@ -191,7 +190,15 @@ class FastifyServer {
                 e instanceof LimitError
             ) {
                 reply.status(e.statusCode).send(e.body);
+            } else if (
+                e instanceof Error &&
+                'statusCode' in e && typeof e.statusCode === 'number' && e.statusCode >= 400 && e.statusCode < 500 &&
+                'code' in e && typeof e.code === 'string' && e.code.startsWith('FST_ERR_')
+            ) {
+                // Parser errors are client errors, not failures in the coupon service.
+                reply.status(e.statusCode).send({error: e.code});
             } else {
+                console.error("FastifyServer Error Handler ", e)
                 const serverError = new InternalServerError()
                 reply.statusCode = serverError.statusCode
                 reply.status(500).send(serverError.body);

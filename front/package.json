@@ -8,6 +8,7 @@
     "build": "vue-tsc --noEmit && vite build",
     "build:local": "vue-tsc --noEmit && vite build --outDir ../build/public",
     "vuetsc": "vue-tsc --noEmit",
+    "test:benefits-api": "node --test test/benefits-api.test.ts",
     "preview": "vite preview",
     "lint": "eslint . --fix"
   },

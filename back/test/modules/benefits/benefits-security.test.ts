@@ -123,6 +123,32 @@ it('production web fallback returns JSON 404 for unknown API requests and preser
     }
 });
 
+it('production error handler preserves Fastify parsing errors as 4xx for bodyless coupon POSTs', async () => {
+    const app = Fastify();
+    FastifyServer.prototype.setupErrorHandler.call({fastifyServer: app});
+    let handled = 0;
+    app.post('/api/benefits/:id/claim', async () => { handled++; return {issued: true}; });
+    app.post('/api/benefit-claims/:token/redeem', async () => { handled++; return {redeemed: true}; });
+    try {
+        for (const url of ['/api/benefits/benefit/claim', '/api/benefit-claims/token/redeem']) {
+            const emptyJson = await app.inject({method: 'POST', url, headers: {'content-type': 'application/json'}});
+            assert.equal(emptyJson.statusCode, 400);
+            assert.deepEqual(emptyJson.json(), {error: 'FST_ERR_CTP_EMPTY_JSON_BODY'});
+            const invalidJson = await app.inject({method: 'POST', url, headers: {'content-type': 'application/json'}, payload: '{'});
+            assert.equal(invalidJson.statusCode, 400);
+            assert.match(invalidJson.json().error, /^FST_ERR_CTP_/);
+            assert.equal(handled, url.includes('/redeem') ? 1 : 0);
+            const noBody = await app.inject({method: 'POST', url});
+            assert.equal(noBody.statusCode, 200, noBody.body);
+        }
+        assert.equal(handled, 2);
+        const unsupported = await app.inject({method: 'POST', url: '/api/benefits/benefit/claim', headers: {'content-type': 'application/xml'}, payload: '<claim />'});
+        assert.equal(unsupported.statusCode, 415);
+        assert.deepEqual(unsupported.json(), {error: 'FST_ERR_CTP_INVALID_MEDIA_TYPE'});
+        assert.equal(handled, 2);
+    } finally { await app.close(); }
+});
+
 it('raster validator checks matching MIME, extension and binary signatures/structure for all four formats', () => {
     for (const fixture of rasterFixtures) {
         assert.doesNotThrow(() => assertRasterImage(fixture.bytes, fixture.filename, fixture.mimetype));

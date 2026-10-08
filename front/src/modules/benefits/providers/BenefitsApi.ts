@@ -10,10 +10,10 @@ export class BenefitsApiError extends Error {
 export async function benefitsRequest<T>(path: string, method: 'GET' | 'POST' = 'GET', publicRequest = false): Promise<T> {
   const client = HttpRestClientFactory.getInstance()
   const headers = { ...client.getBaseHeaders() }
-  if (publicRequest) {
-    for (const key of Object.keys(headers)) {
-      if (key.toLowerCase() === 'authorization') delete headers[key]
-    }
+  // These endpoints send no body; inherited JSON headers would make Fastify reject an empty POST.
+  for (const key of Object.keys(headers)) {
+    const name = key.toLowerCase()
+    if (name === 'content-type' || (publicRequest && name === 'authorization')) delete headers[key]
   }
   const controller = new AbortController()
   const timeout = setTimeout(() => controller.abort(), 30000)
