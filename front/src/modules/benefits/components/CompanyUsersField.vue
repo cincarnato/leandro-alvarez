@@ -2,6 +2,9 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useCrudStore } from '@drax/crud-vue'
+import { useAuth } from '@drax/identity-vue'
+import type { IUser } from '@drax/identity-share'
+import CompanyUserCreateDialog from './CompanyUserCreateDialog.vue'
 import CompanyProvider from '../providers/CompanyProvider'
 import type { ICompany } from '../interfaces/ICompany'
 
@@ -10,6 +13,9 @@ const emit = defineEmits<{ 'update:modelValue': [value: string[]] }>()
 const { t } = useI18n()
 const store = useCrudStore('Company')
 const readonly = computed(() => ['view', 'delete'].includes(store.operation ?? ''))
+const { hasPermission } = useAuth()
+const canCreate = computed(() => !readonly.value && (hasPermission('user:create') || hasPermission('user:manage')))
+const createDialog = ref(false)
 const options = ref<ICompany['users']>([])
 const selectedOptions = ref<ICompany['users']>([])
 const search = ref('')
@@ -35,6 +41,13 @@ function select(value: string[] | null) {
   const ids = value ?? []
   selectedOptions.value = items.value.filter(user => ids.includes(user._id))
   emit('update:modelValue', ids)
+}
+
+function onUserCreated(user: IUser) {
+  const option = { _id: user._id, name: user.name, username: user.username }
+  selectedOptions.value = [...items.value.filter(item => (props.modelValue ?? []).includes(item._id)), option]
+  emit('update:modelValue', [...new Set([...(props.modelValue ?? []), option._id])])
+  createDialog.value = false
 }
 
 async function loadOptions(query: string, version: number) {
@@ -81,25 +94,35 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <v-autocomplete
-    :model-value="modelValue ?? []"
-    v-model:search="search"
-    :items="items"
-    item-value="_id"
-    :item-title="user => user.name || user.username"
-    :label="t('company.field.users')"
-    :loading="loading"
-    :readonly="readonly"
-    :error-messages="errors"
-    multiple
-    chips
-    :closable-chips="!readonly"
-    :clearable="!readonly"
-    no-filter
-    @update:model-value="select"
-  >
-    <template #item="{ props: itemProps, item }">
-      <v-list-item v-bind="itemProps" :subtitle="item.raw.username" />
-    </template>
-  </v-autocomplete>
+  <v-row>
+    <v-col cols="12" :sm="canCreate ? 9 : 12">
+      <v-autocomplete
+        :model-value="modelValue ?? []"
+        v-model:search="search"
+        :items="items"
+        item-value="_id"
+        :item-title="user => user.name || user.username"
+        :label="t('company.field.users')"
+        :loading="loading"
+        :readonly="readonly"
+        :error-messages="errors"
+        multiple
+        chips
+        :closable-chips="!readonly"
+        :clearable="!readonly"
+        no-filter
+        @update:model-value="select"
+      >
+        <template #item="{ props: itemProps, item }">
+          <v-list-item v-bind="itemProps" :subtitle="item.raw.username" />
+        </template>
+      </v-autocomplete>
+    </v-col>
+    <v-col v-if="canCreate" cols="12" sm="3" class="d-flex align-start">
+      <v-btn color="primary" variant="tonal" prepend-icon="mdi-account-plus" class="mt-sm-2" @click="createDialog = true">
+        {{ t('companyUsers.create') }}
+      </v-btn>
+    </v-col>
+  </v-row>
+  <CompanyUserCreateDialog v-if="createDialog" v-model="createDialog" @created="onUserCreated" />
 </template>
