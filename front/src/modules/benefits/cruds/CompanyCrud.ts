@@ -159,7 +159,7 @@ class CompanyCrud extends EntityCrud implements IEntityCrud {
   }
 
   get dialogFullscreen(){
-    return false
+    return true
   }
   
   get tabs() {
