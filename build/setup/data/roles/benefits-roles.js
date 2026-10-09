@@ -5,10 +5,10 @@ import BenefitPermissions from '../../../modules/benefits/permissions/BenefitPer
 import BenefitClaimPermissions from '../../../modules/benefits/permissions/BenefitClaimPermissions.js';
 import BenefitsPermissions from '../../../modules/benefits/permissions/BenefitsPermissions.js';
 export const merchantRole = {
-    name: 'MERCHANT', permissions: Object.values(BenefitClaimPermissions), childRoles: [], readonly: true,
+    name: 'Comerciante', permissions: Object.values(BenefitClaimPermissions), childRoles: [], readonly: true,
 };
 export const managerRole = {
-    name: 'MANAGER',
+    name: 'Gestor',
     permissions: [
         ...Object.values(CompanyPermissions), ...Object.values(CategoryPermissions),
         ...Object.values(BenefitPermissions), ...Object.values(BenefitClaimPermissions),

@@ -1,23 +1,6 @@
 import { UserRoutes } from '@drax/identity-back';
-import { z } from 'zod';
 import { NotFoundError } from '@drax/common-back';
-import InitializeBenefitIdentity from '../../../setup/InitializeBenefitIdentity.js';
-import { UserCompanySchema } from '../schemas/UserCompanySchema.js';
 const BenefitUserRoutes = async (fastify, options) => {
-    InitializeBenefitIdentity();
-    const companySchema = z.toJSONSchema(UserCompanySchema).properties.company;
-    const extendResponse = (schema) => {
-        if (!schema || typeof schema !== 'object')
-            return;
-        if (schema.properties?.username && schema.properties?.role)
-            schema.properties.company = companySchema;
-        for (const value of Object.values(schema)) {
-            if (Array.isArray(value))
-                value.forEach(extendResponse);
-            else if (value && typeof value === 'object')
-                extendResponse(value);
-        }
-    };
     fastify.addHook('onRoute', route => {
         if (route.url === '/api/users/register' && route.method === 'POST') {
             // Keep Drax login and administrative CRUD, but never register visitors.
@@ -27,10 +10,6 @@ const BenefitUserRoutes = async (fastify, options) => {
                 .code(404).send(new NotFoundError().body);
             return;
         }
-        if (route.schema?.body && (route.url === '/api/users' || route.url === '/api/users/:id')) {
-            route.schema.body.properties.company = companySchema;
-        }
-        extendResponse(route.schema?.response);
     });
     await UserRoutes(fastify, options);
 };

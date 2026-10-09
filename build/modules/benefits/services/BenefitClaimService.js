@@ -3,6 +3,7 @@ import { AbstractService } from '@drax/crud-back';
 import { BadRequestError, ForbiddenError, MethodNotAllowedError, NotFoundError } from '@drax/common-back';
 import { UserServiceFactory } from '@drax/identity-back';
 import BenefitServiceFactory from '../factory/services/BenefitServiceFactory.js';
+import CompanyServiceFactory from '../factory/services/CompanyServiceFactory.js';
 import { CouponSchema, StatisticsSchema } from '../schemas/PublicBenefitSchema.js';
 class BenefitClaimService extends AbstractService {
     constructor(repository, baseSchema, fullSchema) {
@@ -27,25 +28,28 @@ class BenefitClaimService extends AbstractService {
             throw new NotFoundError();
         return claim;
     }
-    async merchantCompany(rbac) {
+    async merchantCompanies(rbac) {
         if (rbac.getRole?.name?.toUpperCase() !== 'MERCHANT')
             return null;
         const user = await UserServiceFactory().findById(rbac.userId);
-        if (!user?.active || !user.company)
+        if (!user?.active)
             throw new ForbiddenError();
-        return user.company.toString();
+        const companies = await CompanyServiceFactory.instance.findByUser(rbac.userId);
+        if (!companies.length)
+            throw new ForbiddenError();
+        return companies.map(company => company._id);
     }
     async scopeFilters(rbac) {
-        const company = await this.merchantCompany(rbac);
-        if (!company)
+        const companies = await this.merchantCompanies(rbac);
+        if (!companies)
             return [];
-        const benefits = await BenefitServiceFactory.instance.find({ filters: [{ field: 'company', operator: 'eq', value: company }] });
+        const benefits = await BenefitServiceFactory.instance.find({ filters: [{ field: 'company', operator: 'in', value: companies }] });
         return [{ field: 'benefit', operator: 'in', value: benefits.map(benefit => benefit._id) }];
     }
     async inspect(token, rbac) {
         const claim = await this.byToken(token);
-        const company = await this.merchantCompany(rbac);
-        if (company && claim.benefit?.company?._id !== company)
+        const companies = await this.merchantCompanies(rbac);
+        if (companies && !companies.includes(claim.benefit?.company?._id))
             throw new ForbiddenError();
         return claim;
     }

@@ -1,7 +1,8 @@
 import { z } from 'zod';
 import { CompanySchema } from './CompanySchema.js';
 import { CategorySchema } from './CategorySchema.js';
-export const ObjectIdSchema = z.string().regex(/^[a-f\d]{24}$/i, 'validation.invalidId');
+import { ObjectIdSchema } from './ObjectIdSchema.js';
+export { ObjectIdSchema } from './ObjectIdSchema.js';
 export const BenefitBaseSchema = z.object({
     title: z.string().min(1, 'validation.required'),
     description: z.string().optional(),
@@ -18,7 +19,7 @@ export const BenefitDatesSchema = z.object({ startDate: z.coerce.date(), endDate
     .refine(data => data.endDate >= data.startDate, { path: ['endDate'], message: 'validation.dateRange' });
 export const BenefitSchema = BenefitBaseSchema.extend({
     _id: z.coerce.string(),
-    company: CompanySchema.nullable(),
+    company: CompanySchema.omit({ users: true }).nullable(),
     category: CategorySchema.nullable(),
 });
 export default BenefitSchema;

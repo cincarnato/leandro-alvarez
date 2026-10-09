@@ -3,6 +3,7 @@ import uniqueValidator from 'mongoose-unique-validator';
 import mongoosePaginate from 'mongoose-paginate-v2';
 const CompanySchema = new mongoose.Schema({
     name: { type: String, required: true, index: false, unique: false },
+    users: { type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }], default: [], index: true },
     description: { type: String, required: false, index: false, unique: false },
     logo: { type: String, required: false, index: false, unique: false },
     cuit: { type: String, required: false, index: false, unique: false },
