@@ -12,6 +12,7 @@ const schema: IEntitySchema = {
         contactEmail: {type: 'string'},
         contactPhone: {type: 'string'},
         active: {type: 'boolean', default: true},
+                users: {type: 'array.ref', ref: 'User', refDisplay: 'name'},
     }
 }
 

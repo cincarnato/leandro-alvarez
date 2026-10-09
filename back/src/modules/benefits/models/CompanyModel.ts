@@ -7,6 +7,7 @@ import type {ICompany} from '../interfaces/ICompany'
 
 const CompanySchema = new mongoose.Schema<ICompany>({
             name: {type: String,   required: true, index: false, unique: false },
+                        users: {type: [{type: mongoose.Schema.Types.ObjectId, ref: 'User'}], default: [], index: true},
             description: {type: String,   required: false, index: false, unique: false },
             logo: {type: String,   required: false, index: false, unique: false },
             cuit: {type: String,   required: false, index: false, unique: false },

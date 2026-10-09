@@ -8,6 +8,7 @@ import type {IRbac} from '@drax/identity-share';
 import type {IDraxFieldFilter} from '@drax/crud-share';
 import type {ZodObject, ZodRawShape} from 'zod';
 import BenefitServiceFactory from '../factory/services/BenefitServiceFactory.js';
+import CompanyServiceFactory from '../factory/services/CompanyServiceFactory.js';
 import {CouponSchema, StatisticsSchema} from '../schemas/PublicBenefitSchema.js';
 
 class BenefitClaimService extends AbstractService<IBenefitClaim, IBenefitClaimBase, IBenefitClaimBase> {
@@ -36,24 +37,26 @@ class BenefitClaimService extends AbstractService<IBenefitClaim, IBenefitClaimBa
         return claim;
     }
 
-    async merchantCompany(rbac: IRbac): Promise<string | null> {
+    async merchantCompanies(rbac: IRbac): Promise<string[] | null> {
         if (rbac.getRole?.name?.toUpperCase() !== 'MERCHANT') return null;
-        const user = await UserServiceFactory().findById(rbac.userId) as unknown as {active: boolean; company?: string};
-        if (!user?.active || !user.company) throw new ForbiddenError();
-        return user.company.toString();
+        const user = await UserServiceFactory().findById(rbac.userId);
+        if (!user?.active) throw new ForbiddenError();
+        const companies = await CompanyServiceFactory.instance.findByUser(rbac.userId);
+        if (!companies.length) throw new ForbiddenError();
+        return companies.map(company => company._id);
     }
 
     async scopeFilters(rbac: IRbac): Promise<IDraxFieldFilter[]> {
-        const company = await this.merchantCompany(rbac);
-        if (!company) return [];
-        const benefits = await BenefitServiceFactory.instance.find({filters: [{field: 'company', operator: 'eq', value: company}]});
+        const companies = await this.merchantCompanies(rbac);
+        if (!companies) return [];
+        const benefits = await BenefitServiceFactory.instance.find({filters: [{field: 'company', operator: 'in', value: companies}]});
         return [{field: 'benefit', operator: 'in', value: benefits.map(benefit => benefit._id)}];
     }
 
     async inspect(token: string, rbac: IRbac) {
         const claim = await this.byToken(token);
-        const company = await this.merchantCompany(rbac);
-        if (company && claim.benefit?.company?._id !== company) throw new ForbiddenError();
+        const companies = await this.merchantCompanies(rbac);
+        if (companies && !companies.includes(claim.benefit?.company?._id)) throw new ForbiddenError();
         return claim;
     }
 

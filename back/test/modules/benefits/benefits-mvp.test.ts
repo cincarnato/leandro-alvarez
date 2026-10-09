@@ -17,7 +17,6 @@ import {
 import BenefitSettingRoutes from '../../../src/modules/benefits/routes/BenefitSettingRoutes.js';
 import MongoInMemory from '../../setup/MongoInMemory.js';
 import InitializePermissions from '../../../src/setup/InitializePermissions.js';
-import InitializeBenefitIdentity from '../../../src/setup/InitializeBenefitIdentity.js';
 import InitializeMediaConfig from '../../../src/setup/InitializeMediaConfig.js';
 import CreateSystemRoles from '../../../src/setup/CreateSystemRoles.js';
 import BenefitUserRoutes from '../../../src/modules/benefits/routes/BenefitUserRoutes.js';
@@ -37,6 +36,16 @@ import FastifyServerFactory from '../../../src/factories/FastifyServerFactory.js
 
 const missingId = 'aaaaaaaaaaaaaaaaaaaaaaaa';
 const unknownToken = 'a'.repeat(64);
+
+function assertMinimalUsers(users) {
+    assert.ok(Array.isArray(users));
+    for (const user of users) {
+        assert.deepEqual(Object.keys(user).sort(), ['_id', 'name', 'username']);
+        assert.equal(typeof user._id, 'string');
+        assert.equal(typeof user.name, 'string');
+        assert.equal(typeof user.username, 'string');
+    }
+}
 
 function assertSafeCoupon(coupon) {
     assert.deepEqual(Object.keys(coupon).sort(), ['benefit', 'createdAt', 'redeemedAt', 'token']);
@@ -69,10 +78,10 @@ describe('Benefits MVP: real Drax HTTP/RBAC + MongoInMemory', {concurrency: fals
         return app.inject({method, url, payload, remoteAddress: ip ?? `192.0.2.${++ipSequence % 250 + 1}`,
             headers: token ? {authorization: `Bearer ${token}`} : {}});
     }
-    async function createUser(name: string, role, companyId?: string) {
+    async function createUser(name: string, role) {
         const user = await UserServiceFactory().create({
             name, username: name, email: `${name}@example.com`, password: 'Testing.123!',
-            active: true, role: role._id.toString(), ...(companyId ? {company: companyId} : {}),
+            active: true, role: role._id.toString(),
         } as any);
         const response = await request('POST', '/api/auth/login', {username: name, password: 'Testing.123!'});
         assert.equal(response.statusCode, 200, response.body);
@@ -94,7 +103,6 @@ describe('Benefits MVP: real Drax HTTP/RBAC + MongoInMemory', {concurrency: fals
         InitializeMediaConfig();
         LoadIdentityConfigFromEnv();
         InitializePermissions();
-        InitializeBenefitIdentity();
         await mongo.connect();
         await CreateSystemRoles();
         const {RoleServiceFactory} = await import('@drax/identity-back');
@@ -127,17 +135,20 @@ describe('Benefits MVP: real Drax HTTP/RBAC + MongoInMemory', {concurrency: fals
         sequence++;
         company = await companies.instance.create({name: `Company ${sequence}`, logo: 'logo.png',
             cuit: 'private', contactEmail: 'secret@example.com', contactName: 'private', contactPhone: 'private'});
-        otherCompany = await companies.instance.create({name: 'Other company'});
+        otherCompany = await companies.instance.create({name: 'Other company', logo: 'other-logo.png'});
         category = await categories.instance.create({name: 'Food'});
         otherCategory = await categories.instance.create({name: 'Travel'});
         const data = {title: 'Discount', description: 'Description', image: 'benefit.png', company: company._id,
             category: category._id, startDate: new Date(Date.now() - 60_000), endDate: new Date(Date.now() + 60_000), conditions: 'Show coupon'};
         benefit = await benefits.instance.create(data);
         otherBenefit = await benefits.instance.create({...data, title: 'Other', company: otherCompany._id, category: otherCategory._id});
-        const merchant = await createUser(`merchant${sequence}`, merchantRole, company._id);
+        const merchant = await createUser(`merchant${sequence}`, merchantRole);
         merchantToken = merchant.token;
         merchantUser = merchant.user;
-        otherMerchantToken = (await createUser(`othermerchant${sequence}`, merchantRole, otherCompany._id)).token;
+        const otherMerchant = await createUser(`othermerchant${sequence}`, merchantRole);
+        otherMerchantToken = otherMerchant.token;
+        company = await companies.instance.updatePartial(company._id, {users: [merchantUser._id.toString()]});
+        otherCompany = await companies.instance.updatePartial(otherCompany._id, {users: [otherMerchant.user._id.toString()]});
     });
 
     after(async () => {
@@ -314,26 +325,180 @@ describe('Benefits MVP: real Drax HTTP/RBAC + MongoInMemory', {concurrency: fals
         assert.equal((await request('GET', '/api/benefit-statistics', undefined, merchantToken)).statusCode, 403);
     });
 
-    it('uses persisted User.company rather than token/request data; fails closed when no company exists', async () => {
+    it('removes company membership immediately with the same JWT and fails closed when unassigned', async () => {
         const own = await issue();
         const foreign = await issue(otherBenefit._id);
         const me = await request('GET', '/api/auth/me', undefined, merchantToken);
         assert.equal(me.statusCode, 200, me.body);
-        assert.equal(me.json().company, company._id);
-        const user = await UserServiceFactory().findById(merchantUser._id.toString());
-        const update = {name: user.name, username: user.username, email: user.email, active: true, role: merchantRole._id.toString(), company: otherCompany._id};
-        let response = await request('PUT', `/api/users/${merchantUser._id}`, update, adminToken);
+        assert.ok(!Object.hasOwn(me.json(), 'company'));
+        await companies.instance.updatePartial(otherCompany._id, {users: [...otherCompany.users.map(user => user._id), merchantUser._id.toString()]});
+        const beforeRemoval = await request('GET', '/api/benefit-claims', undefined, merchantToken);
+        assert.equal(beforeRemoval.statusCode, 200, beforeRemoval.body);
+        assert.deepEqual(beforeRemoval.json().items.map(item => item.token).sort(), [own.token, foreign.token].sort());
+        await companies.instance.updatePartial(company._id, {users: []});
+        assert.deepEqual((await companies.instance.findByUser(merchantUser._id.toString())).map(item => item._id), [otherCompany._id]);
+        const response = await request('GET', '/api/benefit-claims', undefined, merchantToken);
         assert.equal(response.statusCode, 200, response.body);
-        assert.equal(response.json().company, otherCompany._id);
-        response = await request('GET', '/api/benefit-claims', undefined, merchantToken);
         assert.deepEqual(response.json().items.map(item => item.token), [foreign.token]);
-        assert.equal((await request('POST', `/api/benefit-claims/${own.token}/redeem`, {company: company._id}, merchantToken)).statusCode, 403);
-        // Simulate a legacy unassigned merchant using the Drax repository, not a fake JWT.
-        const {default: UserMongoRepository} = await import('@drax/identity-back/dist/repository/mongo/UserMongoRepository.js');
-        await new UserMongoRepository().updatePartial(merchantUser._id.toString(), {company: null} as any);
-        for (const [method, url] of [['GET', '/api/benefit-claims'], ['GET', `/api/benefit-claims/${foreign.token}/inspect`], ['POST', `/api/benefit-claims/${foreign.token}/redeem`]]) {
-            assert.equal((await request(method, url, undefined, merchantToken)).statusCode, 403, url);
+        for (const [method, suffix] of [['GET', 'inspect'], ['POST', 'redeem']]) {
+            const denied = await request(method, `/api/benefit-claims/${own.token}/${suffix}?company=${company._id}`, method === 'POST' ? {company: company._id} : undefined, merchantToken);
+            assert.equal(denied.statusCode, 403, denied.body);
+            assert.equal((await request('GET', `/api/benefit-claims/${foreign.token}/inspect`, undefined, merchantToken)).statusCode, 200);
         }
+        await companies.instance.updatePartial(otherCompany._id, {users: otherCompany.users.map(user => user._id)});
+        assert.deepEqual(await companies.instance.findByUser(merchantUser._id.toString()), []);
+        for (const [method, url] of [['GET', '/api/benefit-claims'], ['GET', `/api/benefit-claims/${foreign.token}/inspect`], ['POST', `/api/benefit-claims/${foreign.token}/redeem`]]) {
+            const denied = await request(method, url, undefined, merchantToken);
+            assert.equal(denied.statusCode, 403, denied.body);
+        }
+        assert.equal((await claims.instance.byToken(own.token)).redeemedAt, null);
+        assert.equal((await claims.instance.byToken(foreign.token)).redeemedAt, null);
+    });
+
+    it('allows multiple users in one company and returns minimal safe users from company writes and reads', async () => {
+        const colleague = await createUser(`colleague${sequence}`, merchantRole);
+        const members = [merchantUser, colleague.user];
+        const users = members.map(user => user._id.toString());
+        const expected = members.map(user => ({_id: user._id.toString(), name: user.name, username: user.username}));
+        const assertMembers = output => {
+            assertMinimalUsers(output.users);
+            assert.deepEqual([...output.users].sort((a, b) => a._id.localeCompare(b._id)), [...expected].sort((a, b) => a._id.localeCompare(b._id)));
+        };
+        let response = await request('POST', '/api/company', {name: 'Shared company', users}, managerToken);
+        assert.equal(response.statusCode, 200, response.body);
+        const id = response.json()._id;
+        assertMembers(response.json());
+        for (const method of ['PUT', 'PATCH']) {
+            response = await request(method, `/api/company/${company._id}`, {name: 'Shared fixture', users}, managerToken);
+            assert.equal(response.statusCode, 200, response.body);
+            assertMembers(response.json());
+        }
+        for (const companyId of [id, company._id]) {
+            response = await request('GET', `/api/company/${companyId}`, undefined, managerToken);
+            assert.equal(response.statusCode, 200, response.body);
+            assertMembers(response.json());
+            assertMembers(await companies.instance.findById(companyId));
+        }
+        response = await request('GET', '/api/company', undefined, managerToken);
+        assert.equal(response.statusCode, 200, response.body);
+        for (const item of response.json().items) assertMinimalUsers(item.users);
+        assertMembers(response.json().items.find(item => item._id === company._id));
+        for (const member of members) {
+            const assigned = await companies.instance.findByUser(member._id.toString());
+            assert.deepEqual(assigned.map(item => item._id).sort(), [id, company._id].sort());
+            assigned.forEach(assertMembers);
+        }
+        assert.deepEqual(await companies.instance.findByUser(missingId), []);
+        const first = await issue();
+        const second = await issue();
+        for (const token of [merchantToken, colleague.token]) {
+            response = await request('GET', '/api/benefit-claims', undefined, token);
+            assert.equal(response.statusCode, 200, response.body);
+            assert.equal(response.json().total, 2);
+            assert.deepEqual(response.json().items.map(item => item.token).sort(), [first.token, second.token].sort());
+            assert.equal((await request('GET', `/api/benefit-claims/${first.token}/inspect`, undefined, token)).statusCode, 200);
+        }
+        assert.equal((await request('POST', `/api/benefit-claims/${first.token}/redeem`, undefined, merchantToken)).statusCode, 200);
+        assert.equal((await request('POST', `/api/benefit-claims/${second.token}/redeem`, undefined, colleague.token)).statusCode, 200);
+        assert.equal((await claims.instance.byToken(second.token)).redeemedBy, colleague.user._id.toString());
+    });
+
+    it('scopes merchant coupons to all assigned companies and isolates an unassigned third company', async () => {
+        await companies.instance.updatePartial(otherCompany._id, {users: [...otherCompany.users.map(user => user._id), merchantUser._id.toString()]});
+        const thirdCompany = await companies.instance.create({name: 'Unassigned company'});
+        const thirdBenefit = await benefits.instance.create({...benefit, title: 'Unassigned benefit', company: thirdCompany._id, category: category._id});
+        const own = await issue();
+        const shared = await issue(otherBenefit._id);
+        const foreign = await issue(thirdBenefit._id);
+        const assigned = await companies.instance.findByUser(merchantUser._id.toString());
+        assert.deepEqual(assigned.map(item => item._id).sort(), [company._id, otherCompany._id].sort());
+        for (const item of assigned) assertMinimalUsers(item.users);
+        let response = await request('GET', '/api/benefit-claims', undefined, merchantToken);
+        assert.equal(response.statusCode, 200, response.body);
+        assert.equal(response.json().total, 2);
+        assert.deepEqual(response.json().items.map(item => item.token).sort(), [own.token, shared.token].sort());
+        response.json().items.forEach(assertSafeCoupon);
+        response = await request('GET', '/api/benefit-claims?page=2&limit=1', undefined, merchantToken);
+        assert.equal(response.statusCode, 200, response.body);
+        assert.equal(response.json().total, 2);
+        assert.equal(response.json().items.length, 1);
+        for (const query of [`?filters=benefit;eq;${thirdBenefit._id}`, `?filters=benefit;in;${thirdBenefit._id}`, `?filters=benefit;eq;${thirdBenefit._id};scope|token;eq;${foreign.token};scope`]) {
+            response = await request('GET', `/api/benefit-claims${query}`, undefined, merchantToken);
+            assert.equal(response.statusCode, 200, response.body);
+            assert.ok(response.json().items.every(item => [own.token, shared.token].includes(item.token)));
+            assert.ok(!response.body.includes(foreign.token));
+        }
+        response = await request('GET', '/api/benefit-claims', undefined, otherMerchantToken);
+        assert.equal(response.statusCode, 200, response.body);
+        assert.deepEqual(response.json().items.map(item => item.token), [shared.token]);
+        for (const [method, suffix] of [['GET', 'inspect'], ['POST', 'redeem']]) {
+            assert.equal((await request(method, `/api/benefit-claims/${foreign.token}/${suffix}`, undefined, merchantToken)).statusCode, 403);
+            assert.equal((await request(method, `/api/benefit-claims/${own.token}/${suffix}`, undefined, otherMerchantToken)).statusCode, 403);
+        }
+        assert.equal((await claims.instance.byToken(foreign.token)).redeemedAt, null);
+        assert.equal((await claims.instance.byToken(own.token)).redeemedAt, null);
+        for (const coupon of [own, shared]) {
+            response = await request('GET', `/api/benefit-claims/${coupon.token}/inspect`, undefined, merchantToken);
+            assert.equal(response.statusCode, 200, response.body);
+            assertSafeCoupon(response.json());
+            response = await request('POST', `/api/benefit-claims/${coupon.token}/redeem`, undefined, merchantToken);
+            assert.equal(response.statusCode, 200, response.body);
+            assertSafeCoupon(response.json());
+            assert.equal((await claims.instance.byToken(coupon.token)).redeemedBy, merchantUser._id.toString());
+        }
+    });
+
+    it('validates company users on create, PUT and PATCH and preserves users when PATCH omits them', async () => {
+        const originalUsers = company.users;
+        const total = (await companies.instance.paginate({page: 1, limit: 1})).total;
+        for (const users of [['invalid'], [missingId], [merchantUser._id.toString(), missingId], [{_id: merchantUser._id.toString()}], merchantUser._id.toString()]) {
+            for (const method of ['POST', 'PUT', 'PATCH']) {
+                const url = method === 'POST' ? '/api/company' : `/api/company/${company._id}`;
+                const response = await request(method, url, {name: 'Invalid membership', users}, managerToken);
+                assert.equal(response.statusCode, 422, `${method}: ${response.body}`);
+                const persisted = await companies.instance.findById(company._id);
+                assert.equal(persisted.name, company.name);
+                assert.deepEqual(persisted.users, originalUsers);
+            }
+        }
+        assert.equal((await companies.instance.paginate({page: 1, limit: 1})).total, total);
+        let response = await request('PATCH', `/api/company/${company._id}`, {name: 'Renamed company'}, managerToken);
+        assert.equal(response.statusCode, 200, response.body);
+        assert.deepEqual(response.json().users, originalUsers);
+        assert.deepEqual((await companies.instance.findById(company._id)).users, originalUsers);
+        assert.deepEqual((await companies.instance.findByUser(merchantUser._id.toString())).map(item => item._id), [company._id]);
+        response = await request('PATCH', `/api/company/${company._id}`, {users: []}, managerToken);
+        assert.equal(response.statusCode, 200, response.body);
+        assert.deepEqual(response.json().users, []);
+        assert.deepEqual((await companies.instance.findById(company._id)).users, []);
+        assert.deepEqual(await companies.instance.findByUser(merchantUser._id.toString()), []);
+    });
+
+    it('offers minimal company user-options to manager/admin without granting user:view', async () => {
+        assert.ok(!managerRole.permissions.includes('user:view'));
+        const search = `optionmember${sequence}`;
+        const first = await createUser(`${search}a`, merchantRole);
+        const second = await createUser(`${search}b`, basicRole);
+        const expected = [first.user, second.user].map(user => ({_id: user._id.toString(), name: user.name, username: user.username}));
+        for (const token of [managerToken, adminToken]) {
+            let response = await request('GET', `/api/company/user-options?search=${search}`, undefined, token);
+            assert.equal(response.statusCode, 200, response.body);
+            assertMinimalUsers(response.json());
+            assert.deepEqual([...response.json()].sort((a, b) => a._id.localeCompare(b._id)), [...expected].sort((a, b) => a._id.localeCompare(b._id)));
+            response = await request('GET', `/api/company/user-options?search=${search}nomatch`, undefined, token);
+            assert.equal(response.statusCode, 200, response.body);
+            assert.deepEqual(response.json(), []);
+            response = await request('GET', '/api/company/user-options?search=', undefined, token);
+            assert.equal(response.statusCode, 200, response.body);
+            assertMinimalUsers(response.json());
+        }
+        for (const token of [merchantToken, basicToken]) {
+            const response = await request('GET', `/api/company/user-options?search=${search}`, undefined, token);
+            assert.equal(response.statusCode, 403, response.body);
+        }
+        const anonymous = await request('GET', `/api/company/user-options?search=${search}`);
+        assert.equal(anonymous.statusCode, 401, anonymous.body);
+        assert.equal((await request('GET', '/api/users', undefined, managerToken)).statusCode, 403);
     });
 
     it('disables visitor registration and Google in the real MVP factory while preserving admin login and user CRUD', async () => {
@@ -346,7 +511,7 @@ describe('Benefits MVP: real Drax HTTP/RBAC + MongoInMemory', {concurrency: fals
         };
         const operator = {
             ...visitor, name: 'Operator', username: `operator${sequence}`, email: `operator${sequence}@example.com`,
-            active: true, role: merchantRole._id.toString(), company: company._id,
+            active: true, role: merchantRole._id.toString(),
         };
         try {
             await productionApp.ready();
@@ -374,7 +539,7 @@ describe('Benefits MVP: real Drax HTTP/RBAC + MongoInMemory', {concurrency: fals
             const create = await productionApp.inject({method: 'POST', url: '/api/users', payload: operator, headers});
             assert.equal(create.statusCode, 200, create.body);
             const id = create.json()._id;
-            assert.equal(create.json().company, company._id);
+            assert.ok(!Object.hasOwn(create.json(), 'company'));
             const operatorLogin = await productionApp.inject({method: 'POST', url: '/api/auth/login', payload: {username: operator.username, password: operator.password}});
             assert.equal(operatorLogin.statusCode, 200, operatorLogin.body);
             const list = await productionApp.inject({method: 'GET', url: '/api/users', headers});
@@ -382,21 +547,30 @@ describe('Benefits MVP: real Drax HTTP/RBAC + MongoInMemory', {concurrency: fals
             const update = await productionApp.inject({method: 'PUT', url: `/api/users/${id}`, headers, payload: {...operator, name: 'Updated operator'}});
             assert.equal(update.statusCode, 200, update.body);
             assert.equal(update.json().name, 'Updated operator');
+            assert.ok(!Object.hasOwn(update.json(), 'company'));
             const remove = await productionApp.inject({method: 'DELETE', url: `/api/users/${id}`, headers});
             assert.equal(remove.statusCode, 200, remove.body);
             assert.equal((await users.paginate({page: 1, limit: 1})).total, initial);
         } finally { await productionApp.close(); }
     });
 
-    it('validates merchant company assignment via Drax user writes and denies manager identity/settings administration', async () => {
+    it('accepts unassigned merchants via Drax user writes and denies manager identity/settings administration', async () => {
         const data = {name: 'New merchant', username: `newmerchant${sequence}`, email: `newmerchant${sequence}@example.com`, password: 'Testing.123!', active: true, role: merchantRole._id.toString()};
-        for (const extra of [{}, {company: missingId}, {company: 'invalid'}]) {
-            const response = await request('POST', '/api/users', {...data, ...extra}, adminToken);
-            assert.equal(response.statusCode, 422, response.body);
-        }
-        const response = await request('POST', '/api/users', {...data, company: company._id}, adminToken);
+        let response = await request('POST', '/api/users', data, adminToken);
         assert.equal(response.statusCode, 200, response.body);
-        assert.equal(response.json().company, company._id);
+        const id = response.json()._id;
+        assert.ok(!Object.hasOwn(response.json(), 'company'));
+        response = await request('PUT', `/api/users/${id}`, {...data, name: 'Updated merchant'}, adminToken);
+        assert.equal(response.statusCode, 200, response.body);
+        assert.equal(response.json().name, 'Updated merchant');
+        assert.ok(!Object.hasOwn(response.json(), 'company'));
+        response = await request('GET', `/api/users?filters=_id;eq;${id}`, undefined, adminToken);
+        assert.equal(response.statusCode, 200, response.body);
+        assert.equal(response.json().items.length, 1);
+        assert.ok(!Object.hasOwn(response.json().items[0], 'company'));
+        const login = await request('POST', '/api/auth/login', {username: data.username, password: data.password});
+        assert.equal(login.statusCode, 200, login.body);
+        assert.equal((await request('GET', '/api/benefit-claims', undefined, login.json().accessToken)).statusCode, 403);
         for (const url of ['/api/users', '/api/roles', '/api/settings', '/api/settings/grouped', '/api/settings/example']) {
             for (const token of [managerToken, merchantToken]) {
                 assert.equal((await request('GET', url, undefined, token)).statusCode, 403, url);
@@ -410,7 +584,7 @@ describe('Benefits MVP: real Drax HTTP/RBAC + MongoInMemory', {concurrency: fals
         assert.equal((await request('GET', '/api/settings/grouped')).statusCode, 401);
         assert.equal((await request('POST', '/api/users', data, managerToken)).statusCode, 403);
         assert.deepEqual(managerRole.permissions.filter(permission => permission.startsWith('file:')).sort(), ['file:upload', 'file:view']);
-                assert.ok(managerRole.permissions.filter(permission => !permission.startsWith('file:')).every(permission => /^(company|category|benefit|benefitclaim|benefits):/.test(permission)));
+        assert.ok(managerRole.permissions.filter(permission => !permission.startsWith('file:')).every(permission => /^(company|category|benefit|benefitclaim|benefits):/.test(permission)));
     });
 
     it('registers generated CRUDs with existing lowercase permissions; merchant cannot mutate them', async () => {

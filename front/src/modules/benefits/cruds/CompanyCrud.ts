@@ -13,7 +13,7 @@ import type{
 } from "@drax/crud-share";
 import CompanyProvider from "../providers/CompanyProvider";
 
-//Import EntityCrud Refs
+import {UserCrud} from "@drax/identity-vue";
 
 
 class CompanyCrud extends EntityCrud implements IEntityCrud {
@@ -52,6 +52,7 @@ class CompanyCrud extends EntityCrud implements IEntityCrud {
       { title: 'contactName', key: 'contactName' },
       { title: 'contactEmail', key: 'contactEmail' },
       { title: 'contactPhone', key: 'contactPhone' },
+      { title: 'users', key: 'users', sortable: false },
       { title: 'active', key: 'active' },
     ]
   }
@@ -79,7 +80,7 @@ class CompanyCrud extends EntityCrud implements IEntityCrud {
   
   get refs(): IEntityCrudRefs{
     return {
-      
+      User: UserCrud.instance
     }
   }
 
@@ -98,6 +99,7 @@ class CompanyCrud extends EntityCrud implements IEntityCrud {
 {name:'contactName',type:'string',label:'contactName',default:''},
 {name:'contactEmail',type:'string',label:'contactEmail',default:''},
 {name:'contactPhone',type:'string',label:'contactPhone',default:''},
+{name:'users',type:'array.ref',label:'users',default:[],ref:'User',refDisplay:'name'},
 {name:'active',type:'boolean',label:'active',default:true}
     ]
   }

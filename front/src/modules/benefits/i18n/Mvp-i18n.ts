@@ -65,6 +65,6 @@ const en: typeof es = {
   },
 }
 export default {
-  es: { benefitsMvp: es, user: { field: { company: 'Comercio' } }, permission: { 'benefitclaim:view': 'Consultar cupones', 'benefitclaim:redeem': 'Canjear cupones', 'benefits:statistics': 'Consultar estadísticas' } },
-  en: { benefitsMvp: en, user: { field: { company: 'Company' } }, permission: { 'benefitclaim:view': 'View coupons', 'benefitclaim:redeem': 'Redeem coupons', 'benefits:statistics': 'View statistics' } },
+  es: { benefitsMvp: es, permission: { 'benefitclaim:view': 'Consultar cupones', 'benefitclaim:redeem': 'Canjear cupones', 'benefits:statistics': 'Consultar estadísticas' } },
+  en: { benefitsMvp: en, permission: { 'benefitclaim:view': 'View coupons', 'benefitclaim:redeem': 'Redeem coupons', 'benefits:statistics': 'View statistics' } },
 }

@@ -6,12 +6,26 @@ import {SqliteTableField} from "@drax/common-back";
 
 class CompanySqliteRepository extends AbstractSqliteRepository<ICompany, ICompanyBase, ICompanyBase> implements ICompanyRepository {
 
+    async prepareItem(item: any) {
+        const ids = item.users ?? [];
+        item.users = ids.map((id: string) => this.db.prepare('SELECT _id, name, username FROM users WHERE _id = ?').get(id)).filter(Boolean);
+        return item;
+    }
+
+    async findByUser(userId: string): Promise<ICompany[]> {
+        const items = this.db.prepare(`SELECT * FROM Company WHERE EXISTS (
+            SELECT 1 FROM json_each(COALESCE(Company.users, '[]')) WHERE json_each.value = ?
+        )`).all(userId);
+        for (const item of items) await this.decorate(item);
+        return items;
+    }
+
     protected db: any;
     protected tableName: string = 'Company';
     protected dataBaseFile: string;
     protected searchFields: string[] = [];
     protected booleanFields: string[] = ['active'];
-    protected jsonFields: string[] = [];
+    protected jsonFields: string[] = ['users'];
     protected identifier: string = '_id';
     protected populateFields = [
         
@@ -25,7 +39,8 @@ class CompanySqliteRepository extends AbstractSqliteRepository<ICompany, ICompan
 {name: "contactName", type: "TEXT", unique: undefined, primary: false},
 {name: "contactEmail", type: "TEXT", unique: undefined, primary: false},
 {name: "contactPhone", type: "TEXT", unique: undefined, primary: false},
-{name: "active", type: "TEXT", unique: undefined, primary: false}
+{name: "active", type: "TEXT", unique: undefined, primary: false},
+{name: "users", type: "TEXT", unique: undefined, primary: false}
     ]
   
 }
