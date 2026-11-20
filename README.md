@@ -13,6 +13,41 @@ MVP sobre Drax: catálogo público, cupones individuales sin registro y backoffi
 
 Contrato, permisos, límites y seguridad: [back/BENEFITS_API.md](back/BENEFITS_API.md). Detalles de frontend y despliegue: [front/README.md](front/README.md).
 
+### Node y PM2 en producción
+
+Usar Node 24 tanto para desarrollo como para producción, igual que en el Dockerfile. La versión está declarada en `.nvmrc` y en `back/package.json`; este último se copia al build.
+
+Si aparece `ERR_MODULE_NOT_FOUND: Cannot find package 'stream'` desde `StreamFileStore.js`, comprobar la versión de Node que ejecuta PM2 con `pm2 describe LEANDRO-ALVAREZ`. Drax importa `stream/promises`, un módulo nativo disponible desde Node 15; no se soluciona instalando el paquete `stream` de npm. Un daemon antiguo puede seguir usando otro Node aunque `node -v` en la consola muestre una versión actual.
+
+En el servidor, desde la raíz del proyecto y con nvm instalado:
+
+```bash
+nvm install 24
+nvm use 24
+node -v
+npm install -g pm2@6.0.14
+pm2 update
+```
+
+`pm2 update` actualiza el daemon y restaura los procesos guardados, por lo que puede reiniciar otras aplicaciones administradas por ese mismo PM2. Antes de reiniciar esta aplicación, configurar `interpreter: process.execPath` en su entrada de `ecosystem.config.cjs`, como en el archivo de ejemplo. En modo cluster también debe estar actualizado el Node del daemon.
+
+Si `out/` ya contiene el despliegue, reinstalar las dependencias con Node 24 para actualizar también los módulos nativos y reiniciar:
+
+```bash
+cd out
+npm install --omit=dev
+npm rebuild --omit=dev
+cd ..
+pm2 restart ecosystem.config.cjs --only LEANDRO-ALVAREZ --update-env
+pm2 describe LEANDRO-ALVAREZ
+pm2 logs LEANDRO-ALVAREZ --lines 50 --nostream
+pm2 save
+```
+
+Verificar que `node.js version` en `pm2 describe` indique 24.x. Si PM2 arranca mediante un servicio del sistema, regenerarlo después de cambiar Node con `pm2 unstartup` y `pm2 startup`, siguiendo las instrucciones que imprimen estos comandos, y ejecutar `pm2 save` nuevamente.
+
+Referencias: [streams nativos de Node](https://nodejs.org/api/stream.html#streams-promises-api) y [actualización de PM2 y Node](https://pm2.keymetrics.io/docs/usage/update-pm2/).
+
 ### Verificación
 
 Desde `back/`: `npm run typecheck`, `npm run test:benefits` y `npm run build`.

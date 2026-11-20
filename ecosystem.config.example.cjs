@@ -3,6 +3,7 @@ module.exports = {
 		{
 			name: 'DRAX SCAFFOLD',
 			script: './out/index.js',
+			interpreter: process.execPath,
 			instances: 1,
 			env: {
 				NODE_ENV: 'production',
