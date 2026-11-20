@@ -12,13 +12,13 @@ if (existsSync(compiled)) {
     process.chdir(root);
     try {
         const {runSeedBenefitsDemo} = await import(pathToFileURL(compiled).href);
-        await runSeedBenefitsDemo();
+        await runSeedBenefitsDemo({overwrite: process.argv.slice(2).includes('--overwrite')});
     } catch {
         console.error('No se pudo completar el seed de demo. Revisá MongoDB, assets y permisos de escritura.');
         process.exitCode = 1;
     }
 } else if (existsSync(source)) {
-    const result = spawnSync(process.execPath, ['--import', 'tsx', source], {cwd: root, stdio: 'inherit', env: process.env});
+    const result = spawnSync(process.execPath, ['--import', 'tsx', source, ...process.argv.slice(2)], {cwd: root, stdio: 'inherit', env: process.env});
     if (result.error) console.error('No se pudo ejecutar el seed. Verificá las dependencias de desarrollo.');
     process.exitCode = result.status ?? 1;
 } else {

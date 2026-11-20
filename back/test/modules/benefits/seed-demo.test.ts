@@ -172,6 +172,7 @@ describe('Benefits demo seed: isolated MongoInMemory and temporary Media storage
         await mkdir(mediaDir);
         process.env.DRAX_FILE_METADATA = 'true';
         DraxConfig.set(CommonConfig.MaxUploadSize, undefined);
+        DraxConfig.set(CommonConfig.BaseUrl, baseUrl);
         now = new Date();
     });
 
@@ -212,6 +213,50 @@ describe('Benefits demo seed: isolated MongoInMemory and temporary Media storage
         await assertCounts();
         await assertDemo(renewed);
     });
+
+    for (const metadata of ['true', 'false']) {
+        it(`overwrite repairs all image URLs after a base URL change, preserving IDs and coupons (metadata=${metadata})`, async () => {
+            process.env.DRAX_FILE_METADATA = metadata;
+            DraxConfig.set(CommonConfig.BaseUrl, 'https://incorrect.example.test');
+            await seedBenefitsDemo({now, assetsDir});
+            const identities = (await identitySnapshot()).slice(0, 3);
+            const originalFiles = await diskFiles();
+            const benefit = (await records('Benefit'))[0];
+            const issued = await app.inject({method: 'POST', url: `/api/benefits/${benefit._id}/claim`});
+            assert.equal(issued.statusCode, 200, issued.body);
+            const claims = JSON.stringify(await records('BenefitClaim'));
+            const real = await CompanyServiceFactory.instance.create({name: 'Casa Nativa', description: 'Comercio real',
+                logo: 'https://real.example.test/logo.png', active: false});
+            const originalReal = await CompanyServiceFactory.instance.findById(real._id);
+
+            DraxConfig.set(CommonConfig.BaseUrl, baseUrl);
+            assert.deepEqual(await seedBenefitsDemo({now, assetsDir, overwrite: true}), repeatedSummary);
+            const after = (await identitySnapshot()).slice(0, 3);
+            assert.deepEqual(after[0], identities[0]);
+            assert.deepEqual(after[1].ids.filter(id => id !== real._id.toString()), identities[1].ids);
+            assert.deepEqual(after[2], identities[2]);
+            assert.deepEqual(await CompanyServiceFactory.instance.findById(real._id), originalReal);
+            assert.equal(JSON.stringify(await records('BenefitClaim')), claims);
+            const companies = (await records('Company')).filter(item => item.name.startsWith('Demo · '));
+            const benefits = await records('Benefit');
+            for (const url of [...companies.map(item => item.logo), ...benefits.map(item => item.image)]) {
+                assert.equal(new URL(url).origin, baseUrl);
+                const response = await app.inject({method: 'GET', url: new URL(url).pathname});
+                assert.equal(response.statusCode, 200);
+            }
+            assert.equal(new Set(benefits.map(item => item.image)).size, 10);
+            const repairedCoupon = await app.inject({method: 'GET', url: `/api/public/benefit-claims/${issued.json().token}`});
+            assert.equal(repairedCoupon.statusCode, 200);
+            assert.equal(repairedCoupon.json().token, issued.json().token);
+            assert.equal(new URL(repairedCoupon.json().benefit.image).origin, baseUrl);
+            const files = await diskFiles();
+            assert.equal(files.length, 40);
+            assert.ok(originalFiles.every(file => files.includes(file)), 'retain old files that may still have references');
+            assert.equal(await mongoose.connection.collection('File').countDocuments(), metadata === 'true' ? 40 : 0);
+            await seedBenefitsDemo({now, assetsDir});
+            assert.deepEqual(await diskFiles(), files, 'normal runs keep reusing the repaired uploads');
+        });
+    }
 
     it('preserves real unprefixed records, their dates/flags and all other persisted fields', async () => {
         const category = await CategoryServiceFactory.instance.create({name: 'Hogar', description: 'Categoría real'});
@@ -319,6 +364,24 @@ describe('Benefits demo seed: isolated MongoInMemory and temporary Media storage
                 for (const company of await db.collection('Company').find({}).toArray()) {
                     assert.ok(company.logo.startsWith(`${baseUrl}/api/file/demo-logos-v2/`));
                 }
+                const entityIds = async () => Promise.all(['Category', 'Company', 'Benefit'].map(async name =>
+                    (await db.collection(name).find({}).sort({_id: 1}).toArray()).map(item => item._id.toString())));
+                const originalIds = await entityIds();
+                const correctedUrl = 'https://corrected-seed.example.test';
+                const overwrite = await run(process.execPath, [...args, '--overwrite'], {
+                    cwd: cliRoot, timeout: 18_000, maxBuffer: 1024 * 1024,
+                    env: {PATH: process.env.PATH, HOME: process.env.HOME, NODE_ENV: 'test',
+                        DRAX_DB_ENGINE: 'mongo', DRAX_MONGO_URI: mongo.mongoServer.getUri(dbName),
+                        DRAX_FILE_DIR: fileDir, DRAX_FILE_METADATA: 'true', DRAX_BASE_URL: correctedUrl},
+                });
+                assert.match(overwrite.stdout, /Overwrite:/);
+                assert.deepEqual(await entityIds(), originalIds);
+                assert.equal((await diskFiles(fileDir)).length, 40);
+                for (const [name, field] of [['Company', 'logo'], ['Benefit', 'image']]) {
+                    for (const item of await db.collection(name).find({}).toArray()) {
+                        assert.equal(new URL(item[field]).origin, correctedUrl);
+                    }
+                }
             } finally {
                 await db.dropDatabase();
             }
@@ -326,4 +389,24 @@ describe('Benefits demo seed: isolated MongoInMemory and temporary Media storage
         assert.equal(await mongoose.connection.collection('Benefit').countDocuments(), 0,
             'CLI must not seed the parent test database');
     });
+});
+
+// The production runner imports compiled JS rather than spawning tsx.
+it('forwards overwrite to the compiled seed entry point', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'compiled-seed-runner-'));
+    try {
+        await mkdir(join(root, 'scripts'), {recursive: true});
+        await mkdir(join(root, 'setup/scripts'), {recursive: true});
+        await cp(join(backRoot, 'scripts/seed-demo.mjs'), join(root, 'scripts/seed-demo.mjs'));
+        await writeFile(join(root, 'package.json'), JSON.stringify({type: 'module'}));
+        await writeFile(join(root, 'setup/scripts/SeedBenefitsDemo.js'),
+            'export async function runSeedBenefitsDemo(options) { console.log(JSON.stringify(options)); }');
+        for (const overwrite of [false, true]) {
+            const result = await run(process.execPath, [join(root, 'scripts/seed-demo.mjs'), ...(overwrite ? ['--overwrite'] : [])],
+                {cwd: root, timeout: 5000});
+            assert.deepEqual(JSON.parse(result.stdout), {overwrite});
+        }
+    } finally {
+        await rm(root, {recursive: true, force: true});
+    }
 });
