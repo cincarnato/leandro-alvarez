@@ -33,5 +33,5 @@ function onLoginSuccess() {
 </template>
 
 <style scoped>
-.login-title { font: 400 clamp(1.8rem, 4vw, 2.4rem)/1.2 Georgia, serif; letter-spacing: -.03em; }
+.login-title { font: 700 clamp(1.8rem, 4vw, 2.4rem)/1.2 var(--network-font); letter-spacing: -.03em; }
 </style>

@@ -13,7 +13,7 @@ const { darkMode } = useDarkMode()
 </script>
 
 <template>
-  <v-app-bar color="toolbar" :elevation="0" height="88" class="brand-app-bar no-print">
+  <v-app-bar color="toolbar" :elevation="0" height="80" class="brand-app-bar no-print">
     <div class="bar-content px-3 px-sm-6">
       <v-btn v-if="isAuthenticated()" icon="mdi-menu" variant="text" :aria-label="t('brand.menu')" class="mr-2" @click="$emit('menu')" />
       <BrandMark />
@@ -46,7 +46,7 @@ const { darkMode } = useDarkMode()
 
 <style scoped>
 .brand-app-bar { border-bottom: 1px solid rgba(var(--v-theme-on-surface), .1); }
-.brand-app-bar::after { content: ''; position: absolute; bottom: 0; left: 0; width: 112px; height: 3px; background: rgb(var(--v-theme-brand-terracotta)); }
+.brand-app-bar::after { opacity: .8; content: ''; position: absolute; bottom: 0; left: 0; width: 100%; height: 1px; background: var(--network-cyan); }
 .bar-content { display: flex; align-items: center; width: 100%; max-width: 1440px; margin-inline: auto; }
 @media (max-width: 380px) { .bar-content { padding-inline: 8px !important; } .bar-content :deep(.v-btn--icon) { width: 36px; } }
 </style>

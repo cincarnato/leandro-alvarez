@@ -41,13 +41,13 @@ const year = new Date().getFullYear()
 </template>
 
 <style scoped>
-.brand-footer { background: rgb(var(--v-theme-brand-ink)); color: rgb(var(--v-theme-brand-sand)); flex: 0 0 auto; }
+.brand-footer { background: var(--network-navy); color: var(--network-ice); flex: 0 0 auto; }
 .brand-footer .v-container { max-width: 1200px; }
-.footer-essence { font: 25px/1.4 Georgia, serif; }
+.footer-essence { font: 600 25px/1.4 var(--network-font); }
 .footer-copy { max-width: 360px; line-height: 1.8; opacity: .8; }
 .brand-footer a { color: inherit; text-decoration: none; font-size: 14px; line-height: 1.6; }
 .brand-footer a:hover { text-decoration: underline; text-underline-offset: 4px; }
-.brand-footer a:focus-visible { outline: 2px solid rgb(var(--v-theme-brand-sand)); outline-offset: 5px; }
-.footer-bottom { border-top: 1px solid rgba(var(--v-theme-brand-sand), .2); }
+.brand-footer a:focus-visible { outline: 2px solid var(--network-ice); outline-offset: 5px; }
+.footer-bottom { border-top: 1px solid #f6f8fc33; }
 .footer-bottom small { opacity: .8; line-height: 1.7; }
 </style>

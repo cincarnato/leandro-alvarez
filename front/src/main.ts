@@ -1,4 +1,5 @@
 import App from './App.vue'
+import './styles/network.css'
 import 'roboto-fontface/css/roboto/roboto-fontface.css'
 import indexI18n from "@/i18n/index-I18n";
 import vuetify from "@/plugins/vuetify";
