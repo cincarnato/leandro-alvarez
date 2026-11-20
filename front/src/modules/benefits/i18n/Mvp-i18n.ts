@@ -1,8 +1,15 @@
 const es = {
+  search: 'Buscar comercio, categoría o beneficio', filters: 'Buscar y filtrar beneficios', order: 'Ordenar por',
+  sort: { featured: 'Destacados primero', name: 'Comercio: A–Z', ending: 'Próximos a vencer' },
+  demoNotice: 'Catálogo de demostración: comercios ficticios y promociones sin validez comercial.',
+  results: '{count} beneficios para descubrir', loading: 'Cargando beneficios',
+  emptyHint: 'Probá con otra búsqueda o quitá los filtros para seguir explorando.', clearFilters: 'Limpiar filtros',
+  qrHint: 'Presentá este QR en el comercio', technicalCode: 'Ver código completo', refreshed: 'Estado del cupón actualizado',
+
   uploadPermission: 'La carga de imágenes requiere el permiso file:upload. Consulta al administrador.',
     rowsPerPage: 'Filas por página', changePassword: 'Cambiar contraseña',
     catalog: 'Catálogo de beneficios', detail: 'Ver beneficio', allCategories: 'Todas las categorías',
-  featured: 'Destacados', otherBenefits: 'Más beneficios', availableBenefits: 'Beneficios disponibles',
+  featured: 'Destacado', otherBenefits: 'Más beneficios', availableBenefits: 'Beneficios disponibles',
   claim: 'Obtener cupón', coupon: 'Cupón', coupons: 'Cupones emitidos', operator: 'Inspeccionar y canjear',
   statistics: 'Estadísticas', company: 'Comercio', benefit: 'Beneficio', token: 'Código del cupón',
   createdAt: 'Fecha de emisión', redeemedAt: 'Fecha de canje', endDate: 'Válido hasta', conditions: 'Condiciones',
@@ -32,6 +39,13 @@ const es = {
   },
 }
 const en: typeof es = {
+  search: 'Search business, category or benefit', filters: 'Search and filter benefits', order: 'Sort by',
+  sort: { featured: 'Featured first', name: 'Business: A–Z', ending: 'Ending soon' },
+  demoNotice: 'Demonstration catalog: fictional businesses and offers with no commercial validity.',
+  results: '{count} benefits to discover', loading: 'Loading benefits',
+  emptyHint: 'Try another search or clear your filters to keep exploring.', clearFilters: 'Clear filters',
+  qrHint: 'Show this QR code at the business', technicalCode: 'View full code', refreshed: 'Coupon status updated',
+
   uploadPermission: 'Image uploads require the file:upload permission. Contact your administrator.',
     rowsPerPage: 'Rows per page', changePassword: 'Change password',
     catalog: 'Benefits catalog', detail: 'View benefit', allCategories: 'All categories',

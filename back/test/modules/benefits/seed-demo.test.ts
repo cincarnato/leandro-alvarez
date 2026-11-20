@@ -56,11 +56,11 @@ describe('Benefits demo seed: isolated MongoInMemory and temporary Media storage
         return files.flat().sort();
     }
 
-    async function assertCounts(categories = 8, companies = 10, benefits = 12, files = 10) {
+    async function assertCounts(categories = 8, companies = 10, benefits = 12, files = 20) {
         for (const [name, count] of [['Category', categories], ['Company', companies], ['Benefit', benefits], ['File', files]] as const) {
             assert.equal(await mongoose.connection.collection(name).countDocuments(), count, name);
         }
-        assert.equal((await diskFiles()).length, 10);
+        assert.equal((await diskFiles()).length, 20);
         for (const name of ['User', 'BenefitClaim']) {
             assert.equal(await mongoose.connection.collection(name).countDocuments(), 0, `${name}: seed must not generate identities/coupons`);
         }
@@ -93,7 +93,7 @@ describe('Benefits demo seed: isolated MongoInMemory and temporary Media storage
             assert.equal(company.active, true);
             const url = new URL(company.logo);
             assert.equal(url.origin, baseUrl);
-            assert.match(url.pathname, /^\/api\/file\/demo-logos\/\d{4}\/\d{2}\/.+\.png$/);
+            assert.match(url.pathname, /^\/api\/file\/demo-logos-v2\/\d{4}\/\d{2}\/.+\.png$/);
             const bytes = await readFile(join(assetsDir, expected.logo));
             assert.doesNotThrow(() => assertRasterImage(bytes, expected.logo, 'image/png'));
             assert.deepEqual(bytes.subarray(0, 8), rasterFixtures[0].bytes.subarray(0, 8));
@@ -122,7 +122,11 @@ describe('Benefits demo seed: isolated MongoInMemory and temporary Media storage
             assert.equal(benefit.category.toString(), category._id.toString());
             usedCompanies.add(company._id.toString());
             usedCategories.add(category._id.toString());
-            assert.equal(benefit.image, company.logo);
+            assert.notEqual(benefit.image, company.logo);
+            assert.match(new URL(benefit.image).pathname, /^\/api\/file\/demo-photos\//);
+            const photograph = await app.inject({method: 'GET', url: new URL(benefit.image).pathname});
+            assert.equal(photograph.statusCode, 200);
+            assert.doesNotThrow(() => assertRasterImage(photograph.rawPayload, 'photo.jpg', 'image/jpeg'));
             assert.equal(benefit.description, expected.description);
             assert.equal(benefit.conditions, expected.conditions);
             assert.equal(benefit.active, true);
@@ -193,7 +197,7 @@ describe('Benefits demo seed: isolated MongoInMemory and temporary Media storage
         await assertDemo(now);
     });
 
-    it('reuses IDs and ten files on repeat, updates twelve benefits and renews dates for ninety days', async () => {
+    it('reuses IDs and twenty files on repeat, updates twelve benefits and renews dates for ninety days', async () => {
         const initial = new Date(now.getTime() - 2 * day);
         assert.deepEqual(await seedBenefitsDemo({now: initial, assetsDir}), createdSummary);
         const identities = await identitySnapshot();
@@ -243,6 +247,34 @@ describe('Benefits demo seed: isolated MongoInMemory and temporary Media storage
         assert.deepEqual(await diskFiles(), []);
     });
 
+    it('preflights missing photographs before writing records', async () => {
+        await assert.rejects(seedBenefitsDemo({now, assetsDir, photosDir: join(tempRoot, 'missing-photos')}), {code: 'ENOENT'});
+        for (const name of ['Category', 'Company', 'Benefit', 'File']) {
+            assert.equal(await mongoose.connection.collection(name).countDocuments(), 0);
+        }
+        assert.deepEqual(await diskFiles(), []);
+    });
+
+    it('upgrades legacy seed logos and photos while keeping record IDs and coupon relationships', async () => {
+        await seedBenefitsDemo({now, assetsDir});
+        const before = await identitySnapshot();
+        const company = (await records('Company')).find(item => item.name === demoCompanies[0].name)!;
+        const oldLogo = company.logo.replace('/demo-logos-v2/', '/demo-logos/');
+        await CompanyServiceFactory.instance.updatePartial(company._id.toString(), {logo: oldLogo});
+        const benefit = (await records('Benefit')).find(item => item.title === demoBenefits[0].title)!;
+        await BenefitServiceFactory.instance.updatePartial(benefit._id.toString(), {image: oldLogo});
+        await seedBenefitsDemo({now, assetsDir});
+        const after = await identitySnapshot();
+        assert.deepEqual(after.slice(0, 3), before.slice(0, 3));
+        const upgraded = await CompanyServiceFactory.instance.findOneBy('name', company.name);
+        assert.ok(upgraded!.logo.includes('/demo-logos-v2/'));
+        const updated = await BenefitServiceFactory.instance.findOneBy('title', benefit.title);
+        assert.ok(updated!.image.includes('/demo-photos/'));
+        const files = await diskFiles();
+        await seedBenefitsDemo({now, assetsDir});
+        assert.deepEqual(await diskFiles(), files);
+    });
+
     it('also repeats without duplicate uploads when Media metadata is disabled', async () => {
         process.env.DRAX_FILE_METADATA = 'false';
         assert.deepEqual(await seedBenefitsDemo({now, assetsDir}), createdSummary);
@@ -280,12 +312,12 @@ describe('Benefits demo seed: isolated MongoInMemory and temporary Media storage
             assert.match(result.stdout, /Demo lista: 8 categorías, 10 comercios y 12 beneficios/);
             const db = mongoose.connection.getClient().db(dbName);
             try {
-                for (const [name, count] of [['Category', 8], ['Company', 10], ['Benefit', 12], ['File', 10], ['User', 0], ['BenefitClaim', 0]] as const) {
+                for (const [name, count] of [['Category', 8], ['Company', 10], ['Benefit', 12], ['File', 20], ['User', 0], ['BenefitClaim', 0]] as const) {
                     assert.equal(await db.collection(name).countDocuments(), count, `${index}: ${name}`);
                 }
-                assert.equal((await diskFiles(fileDir)).length, 10);
+                assert.equal((await diskFiles(fileDir)).length, 20);
                 for (const company of await db.collection('Company').find({}).toArray()) {
-                    assert.ok(company.logo.startsWith(`${baseUrl}/api/file/demo-logos/`));
+                    assert.ok(company.logo.startsWith(`${baseUrl}/api/file/demo-logos-v2/`));
                 }
             } finally {
                 await db.dropDatabase();

@@ -12,10 +12,8 @@ Descargada el 2026-10-08. Resolución original: 600 × 600. Convertida localment
 
 El teléfono publicado en el mismo perfil es +54 9 11 3891-0001. No se incorporaron la dirección de oficina ni el correo corporativo a la identidad independiente. Instagram requiere login para consultar su biografía; se conserva únicamente el enlace indicado por el cliente.
 
-## Ilustraciones originales
+## Connected Network
 
-`neighborhood.svg` y `connections.svg` fueron creadas por el agente de IA como ilustraciones vectoriales originales para este proyecto. No son fotografías ni proceden de un generador externo de imágenes.
+El hero usa el componente `ConnectedNetwork.vue`: SVG original de nodos y líneas, con un pulso CSS liviano y soporte para movimiento reducido. No incorpora librerías, partículas ni listeners de cursor.
 
-Dirección artística: barrio cálido, hogares y vegetación, conexiones entre casa, comercios y servicios. Paleta azul tinta, terracota, arena y verde salvia. Sin logos, texto comercial incrustado, personas sintéticas ni referencias a propiedades reales. Ambas se sirven localmente y son SVG estáticos sin scripts ni recursos externos.
-
-El favicon `public/favicon.svg` usa el monograma LA de esta identidad.
+La identidad comparte tokens con los temas de Vuetify y `src/styles/network.css`. El favicon utiliza el mismo monograma navy/cyan.

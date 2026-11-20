@@ -1,0 +1,12 @@
+/* Connected Network: shared geometry, rhythm and interaction tokens. */
+:root { --network-navy: #0B1220; --network-slate: #17243A; --network-cyan: #00C2D9; --network-violet: #8B5CF6; --network-ice: #F6F8FC; --network-radius: 20px; --network-radius-small: 12px; --network-space: 8px; --network-section: clamp(64px, 8vw, 112px); --network-shadow: 0 16px 44px rgba(11,18,32,.08); --network-motion: 220ms ease; --network-font: 'Roboto', sans-serif; }
+.v-application { font-family: var(--network-font); }
+.brand-content { --network-border: 1px solid rgba(var(--v-theme-on-surface),.12); }
+.brand-content h1, .brand-content h2 { text-wrap: balance; }
+.brand-content a:focus-visible, .brand-content button:focus-visible { outline: 3px solid rgb(var(--v-theme-primary)); outline-offset: 4px; }
+.brand-content .v-btn { min-height: 44px; border-radius: var(--network-radius-small); letter-spacing: 0; }
+.brand-content .v-field { border-radius: var(--network-radius-small); }
+.network-heading { font-weight: 750; letter-spacing: -.045em; line-height: 1.08; font-size: clamp(2.2rem, 4.5vw, 4rem); }
+.network-kicker { font-size: .875rem; letter-spacing: .14em; text-transform: uppercase; font-weight: 700; color: rgb(var(--v-theme-primary)); }
+.network-panel { border: var(--network-border); border-radius: var(--network-radius); background: rgb(var(--v-theme-surface)); }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; } }

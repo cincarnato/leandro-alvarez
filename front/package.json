@@ -10,7 +10,8 @@
     "vuetsc": "vue-tsc --noEmit",
     "test:benefits-api": "node --test test/benefits-api.test.ts",
     "preview": "vite preview",
-    "lint": "eslint . --fix"
+    "lint": "eslint . --fix",
+    "test:catalog": "node --test test/catalog.test.ts"
   },
   "dependencies": {
     "@drax/common-front": "^3.68.0",

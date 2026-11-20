@@ -12,7 +12,7 @@ import InitializeMediaConfig from '../InitializeMediaConfig.js';
 import {demoCategories, demoCompanies, demoBenefits} from '../data/benefits-demo.js';
 import type {ICompany} from '../../modules/benefits/interfaces/ICompany.js';
 
-export async function seedBenefitsDemo({now = new Date(), assetsDir = resolve('assets/demo/logos')} = {}) {
+export async function seedBenefitsDemo({now = new Date(), assetsDir = resolve('assets/demo/logos'), photosDir = resolve(assetsDir, '../photos')} = {}) {
     if (DraxConfig.getOrLoad(CommonConfig.DbEngine) !== 'mongo') {
         throw new Error('El seed de beneficios requiere DRAX_DB_ENGINE=mongo.');
     }
@@ -26,6 +26,15 @@ export async function seedBenefitsDemo({now = new Date(), assetsDir = resolve('a
         assertRasterImage(bytes, company.logo, 'image/png');
         if (bytes.length > rasterUploadSizeLimit()) throw new Error(`El logo ${company.logo} supera DRAX_MAX_UPLOAD_SIZE.`);
         logos.set(company.key, bytes);
+    }
+
+    const photos = new Map<string, Buffer>();
+    for (const company of demoCompanies) {
+        const filename = `${company.key}.jpg`;
+        const bytes = await readFile(resolve(photosDir, filename));
+        assertRasterImage(bytes, filename, 'image/jpeg');
+        if (bytes.length > rasterUploadSizeLimit()) throw new Error(`La foto ${filename} supera DRAX_MAX_UPLOAD_SIZE.`);
+        photos.set(company.key, bytes);
     }
 
     const summary = {
@@ -51,9 +60,9 @@ export async function seedBenefitsDemo({now = new Date(), assetsDir = resolve('a
         let company = await CompanyServiceFactory.instance.findOneBy('name', name);
         let storedFile: Awaited<ReturnType<MediaService['saveFile']>> | undefined;
         try {
-            if (!company?.logo) {
+            if (!company?.logo || company.logo.includes('/api/file/demo-logos/')) {
                 storedFile = await media.saveFile({
-                    dir: 'demo-logos', date: now,
+                    dir: 'demo-logos-v2', date: now,
                     file: {filename: logo, fileStream: Readable.from(logos.get(key)!), mimetype: 'image/png', encoding: '7bit'},
                 });
             }
@@ -76,20 +85,38 @@ export async function seedBenefitsDemo({now = new Date(), assetsDir = resolve('a
 
     const startDate = new Date(now.getTime() - 24 * 60 * 60 * 1000);
     const endDate = new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000);
+    const photoUrls = new Map<string, string>();
     for (const benefit of demoBenefits) {
         const company = companies.get(benefit.company)!;
         const category = categories.get(benefit.category)!;
-        const data = {...benefit, company: company._id, category, image: company.logo, startDate, endDate, active: true};
         const existing = await BenefitServiceFactory.instance.findOneBy('title', benefit.title, [
             {field: 'company', operator: 'eq', value: company._id},
             {field: 'category', operator: 'eq', value: category},
         ]);
-        if (existing) {
-            await BenefitServiceFactory.instance.updatePartial(existing._id, data);
-            summary.benefits.updated++;
-        } else {
-            await BenefitServiceFactory.instance.create(data);
-            summary.benefits.created++;
+        let storedPhoto: Awaited<ReturnType<MediaService['saveFile']>> | undefined;
+        let image = photoUrls.get(benefit.company);
+        if (!image) {
+            // Retain uploaded photos on repeat; upgrade the old logo-as-photo demo in place.
+            if (existing?.image?.includes('/api/file/demo-photos/')) image = existing.image;
+            else {
+                storedPhoto = await media.saveFile({dir: 'demo-photos', date: now,
+                    file: {filename: `${benefit.company}.jpg`, fileStream: Readable.from(photos.get(benefit.company)!), mimetype: 'image/jpeg', encoding: '7bit'}});
+                image = storedPhoto.url;
+            }
+        }
+        const data = {...benefit, company: company._id, category, image, startDate, endDate, active: true};
+        try {
+            if (existing) {
+                await BenefitServiceFactory.instance.updatePartial(existing._id, data);
+                summary.benefits.updated++;
+            } else {
+                await BenefitServiceFactory.instance.create(data);
+                summary.benefits.created++;
+            }
+            photoUrls.set(benefit.company, image);
+        } catch (error) {
+            if (storedPhoto) await media.deleteFileByRelativePath({relativePath: storedPhoto.relativePath}).catch(() => undefined);
+            throw error;
         }
     }
     return summary;

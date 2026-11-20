@@ -1,28 +1,15 @@
-# Recursos de beneficios demo
+# Recursos del catálogo de demostración
 
-El dataset `../../src/setup/data/benefits-demo.ts` exporta `demoCategories` (8 categorías), `demoCompanies` (10 comercios) y `demoBenefits` (12 beneficios, 4 destacados). Es únicamente información estática tipada: no ejecuta seeds ni escribe en la base de datos.
+8 categorías, 10 comercios ficticios y 12 beneficios. No hay afiliaciones con marcas reales ni ofertas con validez comercial.
 
-Todos los comercios y las ofertas son ficticios y están destinados exclusivamente a demostraciones. Los nombres de categorías y comercios y los títulos de beneficios comienzan con `Demo · ` para diferenciarlos de datos reales. Las descripciones y condiciones identifican la simulación; los descuentos no tienen validez comercial ni son acumulables. No se incluyen CUIT, correos electrónicos ni teléfonos inventados.
+Los prefijos `Demo · ` se conservan en la base para preservar la identidad y la repetibilidad del seed, y para distinguir registros reales con nombres similares. La interfaz pública los oculta y muestra un aviso general cuando el catálogo contiene demostraciones. El detalle mantiene el aviso y las condiciones explicitan la simulación.
 
-## Logos originales
+## Identidades
 
-Los 10 logos fueron diseñados originalmente para este demo mediante formas geométricas y tipografía, sin reutilizar logos, marcas corporativas ni imágenes externas. Se generaron localmente con Python y Pillow ya instalado, utilizando las fuentes del sistema Lato y DejaVu Serif. No se utilizó red ni se descargaron recursos externos.
+`logos/`: diez monogramas originales, tipografía geométrica y paleta navy/cyan/violeta. PNG 480 × 480, sin marcas de terceros. Los logos y las fotografías tienen funciones y archivos separados.
 
-Cada archivo es un PNG raster RGB de **480 × 480 píxeles**, con bordes suavizados mediante renderizado a triple resolución. La paleta combina azul marino, terracota, verde salvia y crema. Incluyen el nombre comercial y una identificación `DEMO`.
+## Fotografía
 
-| Archivo en `logos/` | Comercio ficticio | Motivo original |
-| --- | --- | --- |
-| `casa-nativa.png` | Casa Nativa | Casa y arco de entrada |
-| `rumbo-mudanzas.png` | Rumbo Mudanzas | Furgón y flecha de traslado |
-| `base-materiales.png` | Base Materiales | Ladrillos escalonados |
-| `trazo-deco.png` | Trazo Deco | Lámpara de mesa en marco arqueado |
-| `verde-patio.png` | Verde Patio | Hojas curvas y tallos |
-| `manos-a-casa.png` | Manos a Casa | Martillo y llave cruzados |
-| `nodo-tecnologia.png` | Nodo Tecnología | Red de nodos conectados |
-| `pausa-bienestar.png` | Pausa Bienestar | Flor de ocho pétalos |
-| `luz-de-casa.png` | Luz de Casa | Lámpara de pie y destello |
-| `taller-roble.png` | Taller Roble | Sección de madera con anillos |
+`photos/`: fotografías de stock de Unsplash, descargadas y distribuidas localmente (1200 × 800 JPEG). Las URLs originales están en `photos/sources.json`. Licencia: https://unsplash.com/license (consultada el 20/11/2026). Las fotografías ambientan categorías y productos; no representan locales ni productos reales de estos comercios ficticios. No implican afiliación de las marcas visibles con la red.
 
-El campo `logo` del dataset contiene solamente el nombre de archivo, siempre `<company.key>.png`. Las relaciones de beneficios usan las claves `company` y `category`, no identificadores de base de datos.
-
-Los PNG se entregan pregenerados como archivos del repositorio. No se necesita Python, Pillow ni generación de imágenes durante el build o en runtime. Este directorio no incorpora scripts de generación, dependencias ni un runner de seed.
+El seed valida todos los archivos antes de escribir, sube las imágenes mediante Media y reutiliza las URLs en ejecuciones sucesivas. Los doce beneficios comparten diez fotografías según el comercio. Los logos anteriores usados como fotografía se reemplazan en la próxima ejecución del seed. No ejecutar contra producción para actualizar exclusivamente la presentación: el seed también renueva vigencias por 90 días.
