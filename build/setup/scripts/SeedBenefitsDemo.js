@@ -10,7 +10,7 @@ import BenefitServiceFactory from '../../modules/benefits/factory/services/Benef
 import { assertRasterImage, rasterUploadSizeLimit } from '../../modules/benefits/services/RasterImageUpload.js';
 import InitializeMediaConfig from '../InitializeMediaConfig.js';
 import { demoCategories, demoCompanies, demoBenefits } from '../data/benefits-demo.js';
-export async function seedBenefitsDemo({ now = new Date(), assetsDir = resolve('assets/demo/logos'), photosDir = resolve(assetsDir, '../photos') } = {}) {
+export async function seedBenefitsDemo({ now = new Date(), assetsDir = resolve('assets/demo/logos'), photosDir = resolve(assetsDir, '../photos'), overwrite = false } = {}) {
     if (DraxConfig.getOrLoad(CommonConfig.DbEngine) !== 'mongo') {
         throw new Error('El seed de beneficios requiere DRAX_DB_ENGINE=mongo.');
     }
@@ -57,7 +57,7 @@ export async function seedBenefitsDemo({ now = new Date(), assetsDir = resolve('
         let company = await CompanyServiceFactory.instance.findOneBy('name', name);
         let storedFile;
         try {
-            if (!company?.logo || company.logo.includes('/api/file/demo-logos/')) {
+            if (overwrite || !company?.logo || company.logo.includes('/api/file/demo-logos/')) {
                 storedFile = await media.saveFile({
                     dir: 'demo-logos-v2', date: now,
                     file: { filename: logo, fileStream: Readable.from(logos.get(key)), mimetype: 'image/png', encoding: '7bit' },
@@ -96,7 +96,7 @@ export async function seedBenefitsDemo({ now = new Date(), assetsDir = resolve('
         let image = photoUrls.get(benefit.company);
         if (!image) {
             // Retain uploaded photos on repeat; upgrade the old logo-as-photo demo in place.
-            if (existing?.image?.includes('/api/file/demo-photos/'))
+            if (!overwrite && existing?.image?.includes('/api/file/demo-photos/'))
                 image = existing.image;
             else {
                 storedPhoto = await media.saveFile({ dir: 'demo-photos', date: now,
@@ -124,7 +124,7 @@ export async function seedBenefitsDemo({ now = new Date(), assetsDir = resolve('
     }
     return summary;
 }
-export async function runSeedBenefitsDemo() {
+export async function runSeedBenefitsDemo({ overwrite = false } = {}) {
     LoadCommonConfigFromEnv();
     if (DraxConfig.getOrLoad(CommonConfig.DbEngine) !== 'mongo') {
         throw new Error('El seed de beneficios requiere DRAX_DB_ENGINE=mongo.');
@@ -136,7 +136,9 @@ export async function runSeedBenefitsDemo() {
         // A one-off command must fail promptly rather than install the server connector's retry timers.
         await mongoose.connect(uri, { serverSelectionTimeoutMS: 10000 });
         console.info('Cargando demo en la base configurada. No se borrarán registros existentes.');
-        const summary = await seedBenefitsDemo();
+        if (overwrite)
+            console.info('Overwrite: se volverán a cargar logos y fotografías con DRAX_BASE_URL actual.');
+        const summary = await seedBenefitsDemo({ overwrite });
         console.table(summary);
         console.info('Demo lista: 8 categorías, 10 comercios y 12 beneficios. Vigencia renovada por 90 días.');
     }
@@ -146,7 +148,7 @@ export async function runSeedBenefitsDemo() {
 }
 if (process.argv[1] && pathToFileURL(resolve(process.argv[1])).href === import.meta.url) {
     try {
-        await runSeedBenefitsDemo();
+        await runSeedBenefitsDemo({ overwrite: process.argv.slice(2).includes('--overwrite') });
     }
     catch (error) {
         // Never print a connection URI or raw database exception (which may carry credentials).
